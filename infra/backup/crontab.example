@@ -1,0 +1,11 @@
+#
+# Example crontab entries for weekly backups with ~1 month retention.
+#
+# Install:
+#   crontab -e
+# Paste lines below, adjust paths as needed.
+#
+# This runs every Sunday 03:15 (server local time).
+#
+15 3 * * 0 cd /Volumes/hasskit/cursor/smarthome && RETENTION_DAYS=35 ./infra/backup/backup.sh ./backups >/dev/null 2>&1
+

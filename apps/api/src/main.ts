@@ -1,0 +1,116 @@
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { json, urlencoded } from 'express';
+import helmet from 'helmet';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.setGlobalPrefix('api');
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidUnknownValues: true,
+      transform: true,
+    }),
+  );
+  app.use(json({ limit: '1mb' }));
+  app.use(urlencoded({ extended: true }));
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.disable?.('x-powered-by');
+
+  // If behind a reverse proxy / load balancer (recommended in production)
+  expressApp.set?.('trust proxy', 1);
+
+  // Security headers (prefer doing TLS + HSTS at the edge; this still helps)
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow public MinIO assets if used
+    }),
+  );
+
+  const configService = app.get(ConfigService);
+  const nodeEnv = configService.get<string>('NODE_ENV', 'development');
+  const corsOrigin = configService.get<string>('CORS_ORIGIN', '');
+  const frontendUrl = configService.get<string>('FRONTEND_URL', '');
+  const allowOrigins = [corsOrigin, frontendUrl]
+    .flatMap((x) => String(x || '').split(','))
+    .map((x) => x.trim())
+    .filter(Boolean);
+
+  app.enableCors({
+    origin: allowOrigins.length ? allowOrigins : nodeEnv !== 'production',
+    credentials: true,
+  });
+
+  const swaggerEnabledRaw = configService.get<string>('SWAGGER_ENABLED', '');
+  const swaggerEnabled =
+    swaggerEnabledRaw !== ''
+      ? swaggerEnabledRaw === 'true'
+      : nodeEnv !== 'production';
+
+  if (swaggerEnabled) {
+    const config = new DocumentBuilder()
+      .setTitle('Multi-Tenant SaaS API')
+      .setDescription(
+        'Production-ready NestJS API with multi-tenancy, authentication, RBAC, billing, and more.',
+      )
+      .setVersion('1.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Enter JWT token',
+        },
+        'JWT-auth',
+      )
+      .addApiKey(
+        {
+          type: 'apiKey',
+          name: 'X-Tenant-ID',
+          in: 'header',
+          description: 'Tenant ID for multi-tenant operations',
+        },
+        'X-Tenant-ID',
+      )
+      .addTag('Auth', 'Authentication endpoints')
+      .addTag('Tenants', 'Tenant/Organization management')
+      .addTag('Users', 'User profile management')
+      .addTag('Memberships', 'Team membership and invitations')
+      .addTag('Feature Flags', 'Feature flag management')
+      .addTag('Billing', 'Subscription and billing management')
+      .addTag('Audit', 'Audit log queries')
+      .addTag('Positions', '岗位管理')
+      .addTag('Employees', '员工管理')
+      .addTag('Employee Types', '员工类型（Skill 挂载/路由）')
+      .addTag('Products', '商品管理')
+      .addTag('Product Categories', '商品分类与推荐费用')
+      .addTag('Projects', '项目管理')
+      .addTag('Sales Orders', '销售订单')
+      .addTag('Installation Records', '技术安装/调试/售后记录')
+      .addTag('Alerts', '预警中心')
+      .addTag('Salaries', '工资结算')
+      .addTag('Excel', 'Excel 导入导出')
+      .addTag('Uploads', '图片/视频上传（MinIO/S3）')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
+      },
+    });
+  }
+
+  const port = configService.get<number>('PORT', 3000);
+  await app.listen(port);
+  console.info(`API listening on http://localhost:${port}`);
+  if (swaggerEnabled) console.info(`Swagger docs at http://localhost:${port}/docs`);
+}
+
+bootstrap();
