@@ -1,15 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreateProductDto {
-  @ApiProperty()
+  @ApiProperty({ description: '商品名称', maxLength: 100 })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   name!: string;
 
-  @ApiProperty({ description: '商品分类，如：开关类、窗帘类等' })
+  @ApiProperty({ description: '商品分类，如：开关类、窗帘类等', maxLength: 50 })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(50)
   category!: string;
 
   @ApiProperty({ description: '标准销售价格' })
@@ -77,16 +79,18 @@ export class CreateProductDto {
 }
 
 export class UpdateProductDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '商品名称', maxLength: 100 })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   name?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '商品分类', maxLength: 50 })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(50)
   category?: string;
 
   @ApiPropertyOptional()

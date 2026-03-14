@@ -1,10 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, Min } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreatePositionDto {
-  @ApiProperty()
+  @ApiProperty({ description: '岗位名称', maxLength: 50 })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(50)
   name!: string;
 
   @ApiProperty({ description: '底薪（月）' })
@@ -44,10 +45,11 @@ export class CreatePositionDto {
 }
 
 export class UpdatePositionDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '岗位名称', maxLength: 50 })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(50)
   name?: string;
 
   @ApiPropertyOptional()

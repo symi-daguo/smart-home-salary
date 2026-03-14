@@ -1,28 +1,15 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, UploadOutlined, DownloadOutlined, SettingOutlined } from '@ant-design/icons'
-import {
-  Button,
-  Card,
-  Dropdown,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Select,
-  Space,
-  Switch,
-  Table,
-  Typography,
-  Upload,
-  message,
-} from 'antd'
+import { Button, Card, Col, Dropdown, Form, Input, InputNumber, Modal, Row, Select, Space, Switch, Table, Typography, Upload, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useEffect, useMemo, useState } from 'react'
 import type { CreateProductInput, Product } from '../api/products'
 import { createProduct, deleteProduct, listProducts, updateProduct } from '../api/products'
-import { exportExcel, exportJson, importExcel, importJson } from '../api/excel'
+import { exportExcel, exportJson, importExcel } from '../api/excel'
 import { downloadBlob } from '../utils/download'
 import type { ProductCategory, CreateProductCategoryInput } from '../api/productCategories'
 import { createProductCategory, deleteProductCategory, listProductCategories, updateProductCategory } from '../api/productCategories'
+import { PageHeader } from '../components/PageHeader'
+import { formRules, MODAL_WIDTH, INPUT_MAX_LENGTH, PLACEHOLDER } from '../utils/formRules'
 
 type FormValues = {
   name: string
@@ -86,26 +73,31 @@ export function ProductsPage() {
 
   const columns: ColumnsType<Product> = useMemo(
     () => [
-      { title: '商品名称', dataIndex: 'name' },
-      { title: '分类', dataIndex: 'category' },
-      { title: '标准价', dataIndex: 'standardPrice' },
-      { title: '安装费', dataIndex: 'installationFee' },
+      { title: '商品名称', dataIndex: 'name', width: 150 },
+      { title: '分类', dataIndex: 'category', width: 100 },
+      { title: '标准价', dataIndex: 'standardPrice', width: 100 },
+      { title: '安装费', dataIndex: 'installationFee', width: 100 },
       {
         title: '建议库存',
         dataIndex: 'suggestedStockQty',
+        width: 100,
         render: (v) => (v == null ? '-' : Number(v)),
       },
       {
         title: '特殊安装',
         dataIndex: 'isSpecialInstallation',
+        width: 90,
         render: (v) => (v ? '是' : '否'),
       },
       {
         title: '操作',
         key: 'actions',
+        width: 160,
+        fixed: 'right',
         render: (_, r) => (
           <Space>
             <Button
+              size="small"
               icon={<EditOutlined />}
               onClick={() => {
                 setEditing(r)
@@ -133,17 +125,19 @@ export function ProductsPage() {
               编辑
             </Button>
             <Button
+              size="small"
               danger
               icon={<DeleteOutlined />}
               onClick={() => {
                 Modal.confirm({
-                  title: '确认删除该商品？',
+                  title: '确认删除',
+                  content: `确定要删除商品「${r.name}」吗？删除后不可恢复。`,
                   okText: '删除',
                   okButtonProps: { danger: true },
                   cancelText: '取消',
                   onOk: async () => {
                     await deleteProduct(r.id)
-                    message.success('已删除')
+                    message.success('删除成功')
                     await refresh()
                   },
                 })
@@ -158,97 +152,120 @@ export function ProductsPage() {
     [form],
   )
 
+  const handleOpenModal = () => {
+    setEditing(null)
+    form.resetFields()
+    form.setFieldsValue({
+      category: categories[0]?.name ?? '开关类',
+      isSpecialInstallation: false,
+    })
+    setOpen(true)
+  }
+
+  const handleSubmit = async () => {
+    const v = await form.validateFields()
+    const payload: CreateProductInput = {
+      name: v.name,
+      category: v.category,
+      standardPrice: v.standardPrice,
+      installationFee: v.installationFee,
+      ...(v.debuggingFee !== undefined ? { debuggingFee: v.debuggingFee } : {}),
+      ...(v.otherFee !== undefined ? { otherFee: v.otherFee } : {}),
+      ...(v.maintenanceDeposit !== undefined ? { maintenanceDeposit: v.maintenanceDeposit } : {}),
+      isSpecialInstallation: !!v.isSpecialInstallation,
+      ...(v.suggestedStockQty !== undefined ? { suggestedStockQty: v.suggestedStockQty } : {}),
+      ...(v.techCommissionInstall !== undefined ? { techCommissionInstall: v.techCommissionInstall } : {}),
+      ...(v.techCommissionDebug !== undefined ? { techCommissionDebug: v.techCommissionDebug } : {}),
+      ...(v.techCommissionMaintenance !== undefined ? { techCommissionMaintenance: v.techCommissionMaintenance } : {}),
+      ...(v.techCommissionAfterSales !== undefined ? { techCommissionAfterSales: v.techCommissionAfterSales } : {}),
+    }
+    if (editing) {
+      await updateProduct(editing.id, payload)
+      message.success('更新成功')
+    } else {
+      await createProduct(payload)
+      message.success('创建成功')
+    }
+    setOpen(false)
+    await refresh()
+  }
+
   return (
     <Card>
-      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            商品管理
-          </Typography.Title>
-          <Typography.Text type="secondary">用于销售订单与技术记录的费用计算。</Typography.Text>
-        </div>
-        <Space wrap>
-          <Button icon={<SettingOutlined />} onClick={() => setCategoryManagerOpen(true)}>
-            分类管理
-          </Button>
-          <Button icon={<ReloadOutlined />} onClick={() => refresh()} loading={loading}>
-            刷新
-          </Button>
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  key: 'xlsx',
-                  label: '导出 Excel',
-                  onClick: async () => {
-                    const buf = await exportExcel('/excel/products/export')
-                    downloadBlob('products.xlsx', new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+      <PageHeader
+        title="商品管理"
+        subtitle="管理商品信息，用于销售订单与技术记录的费用计算。"
+        extra={
+          <>
+            <Button icon={<SettingOutlined />} onClick={() => setCategoryManagerOpen(true)}>
+              分类管理
+            </Button>
+            <Button icon={<ReloadOutlined />} onClick={() => refresh()} loading={loading}>
+              刷新
+            </Button>
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'xlsx',
+                    label: '导出 Excel',
+                    onClick: async () => {
+                      const buf = await exportExcel('/excel/products/export')
+                      downloadBlob(
+                        'products.xlsx',
+                        new Blob([buf], {
+                          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        }),
+                      )
+                    },
                   },
-                },
-                {
-                  key: 'json',
-                  label: '导出 JSON',
-                  onClick: async () => {
-                    const rows = await exportJson<any[]>('/excel/products/export-json')
-                    downloadBlob('products.json', new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' }))
+                  {
+                    key: 'json',
+                    label: '导出 JSON',
+                    onClick: async () => {
+                      const rows = await exportJson<any[]>('/excel/products/export-json')
+                      downloadBlob(
+                        'products.json',
+                        new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' }),
+                      )
+                    },
                   },
-                },
-                {
-                  key: 'tpl',
-                  label: '下载 Excel 模板',
-                  onClick: async () => {
-                    const buf = await exportExcel('/excel/products/template')
-                    downloadBlob('products.template.xlsx', new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+                  {
+                    key: 'tpl',
+                    label: '下载 Excel 模板',
+                    onClick: async () => {
+                      const buf = await exportExcel('/excel/products/template')
+                      downloadBlob(
+                        'products.template.xlsx',
+                        new Blob([buf], {
+                          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        }),
+                      )
+                    },
                   },
-                },
-              ],
-            }}
-          >
-            <Button icon={<DownloadOutlined />}>导出/模板</Button>
-          </Dropdown>
-          <Upload
-            accept=".xlsx"
-            showUploadList={false}
-            beforeUpload={async (file) => {
-              const resp = await importExcel('/excel/products/import', file as any)
-              message.success(`导入完成：upserted=${resp.upserted}`)
-              await refresh()
-              return false
-            }}
-          >
-            <Button icon={<UploadOutlined />}>导入 Excel</Button>
-          </Upload>
-          <Upload
-            accept=".json"
-            showUploadList={false}
-            beforeUpload={async (file) => {
-              const text = await file.text()
-              const rows = JSON.parse(text)
-              const resp = await importJson<{ upserted: number }>('/excel/products/import-json', rows)
-              message.success(`导入完成：upserted=${resp.upserted}`)
-              await refresh()
-              return false
-            }}
-          >
-            <Button>导入 JSON</Button>
-          </Upload>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditing(null)
-              form.resetFields()
-              form.setFieldsValue({
-                category: categories[0]?.name ?? '开关类',
-                isSpecialInstallation: false,
-              })
-              setOpen(true)
-            }}
-          >
-            新增商品
-          </Button>
-        </Space>
-      </Space>
+                ],
+              }}
+            >
+              <Button icon={<DownloadOutlined />}>导出/模板</Button>
+            </Dropdown>
+            <Upload
+              accept=".xlsx"
+              showUploadList={false}
+              beforeUpload={async (file) => {
+                const resp = await importExcel('/excel/products/import', file as any)
+                message.success(`导入完成：upserted=${resp.upserted}`)
+                await refresh()
+                return false
+              }}
+            >
+              <Button icon={<UploadOutlined />}>导入 Excel</Button>
+            </Upload>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenModal}>
+              新增商品
+            </Button>
+          </>
+        }
+      />
 
       <div style={{ height: 12 }} />
 
@@ -257,7 +274,7 @@ export function ProductsPage() {
         loading={loading}
         dataSource={rows}
         columns={columns}
-        pagination={{ pageSize: 10 }}
+        pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50] }}
         scroll={{ x: 'max-content' }}
       />
 
@@ -266,119 +283,119 @@ export function ProductsPage() {
         open={open}
         okText="保存"
         cancelText="取消"
+        width={MODAL_WIDTH.large}
         destroyOnClose
         onCancel={() => setOpen(false)}
-        onOk={async () => {
-          const v = await form.validateFields()
-          const payload: CreateProductInput = {
-            name: v.name,
-            category: v.category,
-            standardPrice: v.standardPrice,
-            installationFee: v.installationFee,
-            ...(v.debuggingFee !== undefined ? { debuggingFee: v.debuggingFee } : {}),
-            ...(v.otherFee !== undefined ? { otherFee: v.otherFee } : {}),
-            ...(v.maintenanceDeposit !== undefined ? { maintenanceDeposit: v.maintenanceDeposit } : {}),
-            isSpecialInstallation: !!v.isSpecialInstallation,
-            ...(v.suggestedStockQty !== undefined ? { suggestedStockQty: v.suggestedStockQty } : {}),
-            ...(v.techCommissionInstall !== undefined ? { techCommissionInstall: v.techCommissionInstall } : {}),
-            ...(v.techCommissionDebug !== undefined ? { techCommissionDebug: v.techCommissionDebug } : {}),
-            ...(v.techCommissionMaintenance !== undefined ? { techCommissionMaintenance: v.techCommissionMaintenance } : {}),
-            ...(v.techCommissionAfterSales !== undefined ? { techCommissionAfterSales: v.techCommissionAfterSales } : {}),
-          }
-          if (editing) {
-            await updateProduct(editing.id, payload)
-            message.success('已更新')
-          } else {
-            await createProduct(payload)
-            message.success('已创建')
-          }
-          setOpen(false)
-          await refresh()
-        }}
+        onOk={handleSubmit}
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="商品名称" name="name" rules={[{ required: true, message: '请输入商品名称' }]}>
-            <Input placeholder="例如：智能开关 / 网关" />
-          </Form.Item>
-          <Form.Item label="分类" name="category" rules={[{ required: true, message: '请选择分类' }]}>
-            <Select
-              style={{ width: '100%' }}
-              options={categoryOptions.length ? categoryOptions : CATEGORY_OPTIONS}
-              showSearch
-              optionFilterProp="label"
-              onChange={(name) => {
-                const cat = categories.find((c) => c.name === name)
-                if (!cat) return
-                const current = form.getFieldsValue([
-                  'installationFee',
-                  'debuggingFee',
-                  'otherFee',
-                ])
-                const patch: Partial<FormValues> = {}
-                if (current.installationFee == null || current.installationFee === undefined) {
-                  patch.installationFee = Number(cat.recommendedInstallationFee)
-                }
-                if (
-                  (current.debuggingFee == null || current.debuggingFee === undefined) &&
-                  cat.recommendedDebuggingFee != null
-                ) {
-                  patch.debuggingFee = Number(cat.recommendedDebuggingFee)
-                }
-                if (
-                  (current.otherFee == null || current.otherFee === undefined) &&
-                  cat.recommendedOtherFee != null
-                ) {
-                  patch.otherFee = Number(cat.recommendedOtherFee)
-                }
-                if (Object.keys(patch).length > 0) {
-                  form.setFieldsValue(patch)
-                  message.info('已按分类带出推荐费用，可根据实际项目调整。')
-                }
-              }}
-            />
-          </Form.Item>
-          <Space style={{ width: '100%' }} align="start">
-            <Form.Item label="标准价" name="standardPrice" rules={[{ required: true, message: '请输入标准价' }]} style={{ flex: 1 }}>
-              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-            </Form.Item>
-            <Form.Item label="安装费" name="installationFee" rules={[{ required: true, message: '请输入安装费' }]} style={{ flex: 1 }}>
-              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-            </Form.Item>
-          </Space>
-          <Space style={{ width: '100%' }} align="start">
-            <Form.Item label="调试费（可选）" name="debuggingFee" style={{ flex: 1 }}>
-              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-            </Form.Item>
-            <Form.Item label="售后费（可选）" name="otherFee" style={{ flex: 1 }}>
-              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-            </Form.Item>
-          </Space>
-          <Form.Item label="维护押金（可选）" name="maintenanceDeposit">
-            <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="商品名称" name="name" rules={[{ required: true, message: '请输入商品名称' }]}>
+                <Input placeholder="例如：智能开关 / 网关" maxLength={INPUT_MAX_LENGTH.name} showCount />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="分类" name="category" rules={[{ required: true, message: '请选择分类' }]}>
+                <Select
+                  style={{ width: '100%' }}
+                  options={categoryOptions.length ? categoryOptions : CATEGORY_OPTIONS}
+                  showSearch
+                  optionFilterProp="label"
+                  onChange={(name) => {
+                    const cat = categories.find((c) => c.name === name)
+                    if (!cat) return
+                    const current = form.getFieldsValue([
+                      'installationFee',
+                      'debuggingFee',
+                      'otherFee',
+                    ])
+                    const patch: Partial<FormValues> = {}
+                    if (current.installationFee == null || current.installationFee === undefined) {
+                      patch.installationFee = Number(cat.recommendedInstallationFee)
+                    }
+                    if (
+                      (current.debuggingFee == null || current.debuggingFee === undefined) &&
+                      cat.recommendedDebuggingFee != null
+                    ) {
+                      patch.debuggingFee = Number(cat.recommendedDebuggingFee)
+                    }
+                    if (
+                      (current.otherFee == null || current.otherFee === undefined) &&
+                      cat.recommendedOtherFee != null
+                    ) {
+                      patch.otherFee = Number(cat.recommendedOtherFee)
+                    }
+                    if (Object.keys(patch).length > 0) {
+                      form.setFieldsValue(patch)
+                      message.info('已按分类带出推荐费用，可根据实际项目调整。')
+                    }
+                  }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item label="建议库存数量（可选）" name="suggestedStockQty">
-            <InputNumber style={{ width: '100%' }} min={0} precision={0} />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item label="标准价" name="standardPrice" rules={formRules.amount(0, '请输入标准价')} style={{ flex: 1 }}>
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder={PLACEHOLDER.amount} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="安装费" name="installationFee" rules={formRules.amount(0, '请输入安装费')} style={{ flex: 1 }}>
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder={PLACEHOLDER.amount} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="调试费" name="debuggingFee">
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item label="售后费" name="otherFee">
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="维护押金" name="maintenanceDeposit">
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="建议库存" name="suggestedStockQty">
+                <InputNumber style={{ width: '100%' }} min={0} precision={0} placeholder="可选" />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Typography.Text strong>技术提成（可选）</Typography.Text>
           <div style={{ height: 8 }} />
-          <Space style={{ width: '100%' }} align="start">
-            <Form.Item label="安装提成" name="techCommissionInstall" style={{ flex: 1 }}>
-              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-            </Form.Item>
-            <Form.Item label="调试提成" name="techCommissionDebug" style={{ flex: 1 }}>
-              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-            </Form.Item>
-          </Space>
-          <Space style={{ width: '100%' }} align="start">
-            <Form.Item label="维保提成" name="techCommissionMaintenance" style={{ flex: 1 }}>
-              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-            </Form.Item>
-            <Form.Item label="售后提成" name="techCommissionAfterSales" style={{ flex: 1 }}>
-              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-            </Form.Item>
-          </Space>
+          <Row gutter={16}>
+            <Col span={6}>
+              <Form.Item label="安装提成" name="techCommissionInstall">
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="调试提成" name="techCommissionDebug">
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="维保提成" name="techCommissionMaintenance">
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="售后提成" name="techCommissionAfterSales">
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item label="特殊安装标记" name="isSpecialInstallation" valuePropName="checked">
             <Switch />
@@ -387,28 +404,25 @@ export function ProductsPage() {
       </Modal>
 
       <Modal
-        title="商品分类管理（含推荐安装/调试费）"
+        title="商品分类管理"
         open={categoryManagerOpen}
-        okText="关闭"
-        cancelText="关闭"
+        onCancel={() => setCategoryManagerOpen(false)}
+        width={MODAL_WIDTH.large}
         footer={[
           <Button key="close" onClick={() => setCategoryManagerOpen(false)}>
             关闭
           </Button>,
         ]}
-        onCancel={() => setCategoryManagerOpen(false)}
-        width={720}
       >
-        <Typography.Paragraph type="secondary">
-          这里配置的是按分类的“参考价”，来自 2023–2025 年公开的智能家居安装/调试服务报价（安装费通常为设备价
-          10%–20%，门锁/窗帘等略高）。你可以根据自己公司的人工成本和服务标准自由调整，商品级别仍然可以单独覆写。
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
+          配置商品分类的推荐安装/调试费用。新建商品时会自动带出对应分类的推荐费用。
         </Typography.Paragraph>
         <Form
           form={categoryForm}
           layout="inline"
           onFinish={async (v) => {
             await createProductCategory(v)
-            message.success('已创建分类')
+            message.success('创建成功')
             categoryForm.resetFields()
             const cats = await listProductCategories()
             setCategories(cats)
@@ -419,27 +433,27 @@ export function ProductsPage() {
             name="name"
             rules={[{ required: true, message: '请输入分类名称' }]}
           >
-            <Input placeholder="例如：开关类" />
+            <Input placeholder="例如：开关类" style={{ width: 120 }} />
           </Form.Item>
           <Form.Item
             label="推荐安装费"
             name="recommendedInstallationFee"
-            rules={[{ required: true, message: '请输入推荐安装费' }]}
+            rules={[{ required: true, message: '请输入' }]}
           >
-            <InputNumber min={0} precision={2} />
+            <InputNumber min={0} precision={2} style={{ width: 100 }} />
           </Form.Item>
           <Form.Item label="推荐调试费" name="recommendedDebuggingFee">
-            <InputNumber min={0} precision={2} />
+            <InputNumber min={0} precision={2} style={{ width: 100 }} />
           </Form.Item>
           <Form.Item label="推荐售后费" name="recommendedOtherFee">
-            <InputNumber min={0} precision={2} />
+            <InputNumber min={0} precision={2} style={{ width: 100 }} />
           </Form.Item>
           <Form.Item label="备注" name="remark">
-            <Input placeholder="可备注来源/说明" />
+            <Input placeholder="可选" style={{ width: 120 }} />
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit">
-              新增分类
+              新增
             </Button>
           </Form.Item>
         </Form>
@@ -452,26 +466,30 @@ export function ProductsPage() {
           pagination={false}
           size="small"
           columns={[
-            { title: '名称', dataIndex: 'name' },
+            { title: '名称', dataIndex: 'name', width: 100 },
             {
               title: '推荐安装费',
               dataIndex: 'recommendedInstallationFee',
+              width: 100,
               render: (v: any) => Number(v),
             },
             {
               title: '推荐调试费',
               dataIndex: 'recommendedDebuggingFee',
+              width: 100,
               render: (v: any) => (v == null ? '-' : Number(v)),
             },
             {
               title: '推荐售后费',
               dataIndex: 'recommendedOtherFee',
+              width: 100,
               render: (v: any) => (v == null ? '-' : Number(v)),
             },
-            { title: '备注', dataIndex: 'remark' },
+            { title: '备注', dataIndex: 'remark', ellipsis: true },
             {
               title: '操作',
               key: 'actions',
+              width: 140,
               render: (_: any, r: ProductCategory) => (
                 <Space>
                   <Button
@@ -498,24 +516,16 @@ export function ProductsPage() {
                             }}
                             onFinish={async (values) => {
                               await updateProductCategory(r.id, values)
-                              message.success('已更新分类')
+                              message.success('更新成功')
                               const cats = await listProductCategories()
                               setCategories(cats)
                               Modal.destroyAll()
                             }}
                           >
-                            <Form.Item
-                              label="名称"
-                              name="name"
-                              rules={[{ required: true, message: '请输入分类名称' }]}
-                            >
+                            <Form.Item label="名称" name="name" rules={[{ required: true }]}>
                               <Input />
                             </Form.Item>
-                            <Form.Item
-                              label="推荐安装费"
-                              name="recommendedInstallationFee"
-                              rules={[{ required: true, message: '请输入推荐安装费' }]}
-                            >
+                            <Form.Item label="推荐安装费" name="recommendedInstallationFee" rules={[{ required: true }]}>
                               <InputNumber min={0} precision={2} style={{ width: '100%' }} />
                             </Form.Item>
                             <Form.Item label="推荐调试费" name="recommendedDebuggingFee">
@@ -529,9 +539,7 @@ export function ProductsPage() {
                             </Form.Item>
                             <Form.Item>
                               <Space>
-                                <Button type="primary" htmlType="submit">
-                                  保存
-                                </Button>
+                                <Button type="primary" htmlType="submit">保存</Button>
                                 <Button onClick={() => Modal.destroyAll()}>取消</Button>
                               </Space>
                             </Form.Item>
@@ -551,14 +559,14 @@ export function ProductsPage() {
                     icon={<DeleteOutlined />}
                     onClick={() => {
                       Modal.confirm({
-                        title: `确认删除分类「${r.name}」？`,
-                        content: '仅删除分类配置，不会删除已存在的商品记录。',
+                        title: '确认删除',
+                        content: `确定要删除分类「${r.name}」吗？仅删除分类配置，不会删除已存在的商品记录。`,
                         okText: '删除',
                         okButtonProps: { danger: true },
                         cancelText: '取消',
                         onOk: async () => {
                           await deleteProductCategory(r.id)
-                          message.success('已删除分类')
+                          message.success('删除成功')
                           const cats = await listProductCategories()
                           setCategories(cats)
                         },
@@ -576,4 +584,3 @@ export function ProductsPage() {
     </Card>
   )
 }
-

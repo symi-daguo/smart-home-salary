@@ -1,5 +1,5 @@
 import { CheckOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Grid, Row, Select, Space, Table, Tag, Typography, message } from 'antd'
+import { Button, Card, Col, Grid, Row, Select, Space, Table, Tag, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
@@ -7,11 +7,14 @@ import type { Alert, AlertSeverity } from '../api/alerts'
 import { listAlerts, resolveAlert, runAlertCompare } from '../api/alerts'
 import type { Project } from '../api/projects'
 import { listProjects } from '../api/projects'
+import { ALERT_SEVERITY_LABELS } from '../constants/labels'
+import { PageHeader } from '../components/PageHeader'
 
 function severityTag(s: AlertSeverity) {
-  if (s === 'CRITICAL') return <Tag color="red">CRITICAL</Tag>
-  if (s === 'WARNING') return <Tag color="gold">WARNING</Tag>
-  return <Tag color="blue">INFO</Tag>
+  const label = ALERT_SEVERITY_LABELS[s] ?? s
+  if (s === 'CRITICAL') return <Tag color="red">{label}</Tag>
+  if (s === 'WARNING') return <Tag color="gold">{label}</Tag>
+  return <Tag color="blue">{label}</Tag>
 }
 
 export function AlertsPage() {
@@ -83,32 +86,30 @@ export function AlertsPage() {
 
   return (
     <Card>
-      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            预警中心
-          </Typography.Title>
-          <Typography.Text type="secondary">按项目运行比对生成预警，并支持查询与处理。</Typography.Text>
-        </div>
-        <Space wrap>
-          <Button icon={<ReloadOutlined />} onClick={() => refresh()} loading={loading}>
-            刷新
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlayCircleOutlined />}
-            disabled={!projectId}
-            onClick={async () => {
-              if (!projectId) return
-              await runAlertCompare(projectId)
-              message.success('已运行比对并生成预警')
-              await refresh()
-            }}
-          >
-            运行比对
-          </Button>
-        </Space>
-      </Space>
+      <PageHeader
+        title="预警中心"
+        subtitle="按项目运行比对生成预警，并支持查询与处理。"
+        extra={
+          <>
+            <Button icon={<ReloadOutlined />} onClick={() => refresh()} loading={loading}>
+              刷新
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlayCircleOutlined />}
+              disabled={!projectId}
+              onClick={async () => {
+                if (!projectId) return
+                await runAlertCompare(projectId)
+                message.success('已运行比对并生成预警')
+                await refresh()
+              }}
+            >
+              运行比对
+            </Button>
+          </>
+        }
+      />
 
       <div style={{ height: 12 }} />
 
@@ -130,9 +131,7 @@ export function AlertsPage() {
             value={severity ?? ''}
             options={[
               { value: '', label: '全部级别' },
-              { value: 'INFO', label: 'INFO' },
-              { value: 'WARNING', label: 'WARNING' },
-              { value: 'CRITICAL', label: 'CRITICAL' },
+              ...Object.entries(ALERT_SEVERITY_LABELS).map(([value, label]) => ({ value, label })),
             ]}
             onChange={(v) => setSeverity((v || undefined) as any)}
           />
@@ -167,7 +166,7 @@ export function AlertsPage() {
         loading={loading}
         dataSource={rows}
         columns={columns}
-        pagination={{ pageSize: 10 }}
+        pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50] }}
         scroll={{ x: 'max-content' }}
       />
     </Card>

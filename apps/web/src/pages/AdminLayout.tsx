@@ -21,16 +21,7 @@ import {
   ToolOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import {
-  Avatar,
-  Button,
-  Dropdown,
-  Layout,
-  Menu,
-  Space,
-  Typography,
-  theme,
-} from 'antd'
+import { Avatar, Breadcrumb, Button, Dropdown, Layout, Menu, Space, Typography, theme } from 'antd'
 import type { MenuProps } from 'antd'
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -95,6 +86,23 @@ const NAV_ITEMS_ALL: NonNullable<MenuProps['items']> = [
   { key: '/settings', icon: <SettingOutlined />, label: '系统设置' },
 ]
 
+const BREADCRUMB_MAP: Record<string, string[]> = {
+  '/dashboard': ['工作台'],
+  '/positions': ['组织架构', '岗位管理'],
+  '/employee-types': ['组织架构', '员工类型'],
+  '/employees': ['组织架构', '员工管理'],
+  '/products': ['业务管理', '商品管理'],
+  '/projects': ['业务管理', '项目管理'],
+  '/sales-orders': ['业务上报', '销售上报'],
+  '/installation-records': ['业务上报', '技术上报'],
+  '/measurement-surveys': ['测量工勘', '信息记录'],
+  '/curtain-orders': ['测量工勘', '窗帘下单'],
+  '/salary': ['财务与风控', '工资结算'],
+  '/alerts': ['财务与风控', '预警中心'],
+  '/openclaw': ['OpenClaw 联调'],
+  '/settings': ['系统设置'],
+}
+
 export function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -108,26 +116,34 @@ export function AdminLayout() {
   } = theme.useToken()
 
   const [collapsed, setCollapsed] = useState(false)
+  const [tenantName, setTenantName] = useState<string>('')
+  const [userDisplay, setUserDisplay] = useState<string>('')
 
   useEffect(() => {
-    // 如果已经有 token 且尚未解析角色，则自动根据当前租户 ID 从 /users/me 补充角色信息
-    if (!accessToken || !activeTenantId || (roles && roles.length)) return
-    const loadRoles = async () => {
+    if (!accessToken || !activeTenantId) return
+    const loadProfileAndTenant = async () => {
       try {
-        const res = await http.get<{ tenants: { id: string; role: string }[] }>('/users/me')
-        const memberships = res.data.tenants ?? []
-        const current = memberships.find((m) => m.id === activeTenantId)
+        const [meRes, tenantRes] = await Promise.all([
+          http.get<{ email?: string; displayName?: string | null; tenants: { id: string; role: string }[] }>('/users/me'),
+          http.get<{ name?: string; slug?: string }>('/tenants/current').catch(() => ({ data: {} as { name?: string; slug?: string } })),
+        ])
+        const memberships = meRes.data.tenants ?? []
+        const current = memberships.find((m: { id: string }) => m.id === activeTenantId)
         const role = current?.role
         const setRoles = useAuthStore.getState().setRoles
         setRoles(role ? [role] : null)
+        setUserDisplay(meRes.data.displayName?.trim() || meRes.data.email || '')
+        const t = tenantRes.data
+        setTenantName(t?.name?.trim() || t?.slug || '')
       } catch {
         // 忽略失败；保持现有最小菜单，避免影响基础使用
       }
     }
-    loadRoles()
-  }, [accessToken, activeTenantId, roles])
+    loadProfileAndTenant()
+  }, [accessToken, activeTenantId])
 
   const selectedKey = location.pathname === '/' ? '/dashboard' : location.pathname
+  const breadcrumbItems = BREADCRUMB_MAP[selectedKey] ?? []
 
   const isOwnerOrAdmin = (roles ?? []).some((r) => r === 'OWNER' || r === 'ADMIN')
   const navItems: MenuProps['items'] = isOwnerOrAdmin
@@ -147,7 +163,7 @@ export function AdminLayout() {
       {
         key: 'tenant',
         icon: <UserOutlined />,
-        label: `所属公司ID: ${activeTenantId ?? '-'}`,
+        label: `当前公司：${tenantName || activeTenantId || '-'}`,
       },
       {
         type: 'divider' as const,
@@ -254,12 +270,12 @@ export function AdminLayout() {
         >
           {!collapsed && (
             <Text type="secondary" style={{ fontSize: 12 }}>
-              SYMI v2.0.0-MVP (2026)
+              SYMI v1.0.3 (2026)
             </Text>
           )}
           {collapsed && (
             <Text type="secondary" style={{ fontSize: 10 }}>
-              SYMI v2.0
+              v1.0.3
             </Text>
           )}
         </div>
@@ -335,7 +351,7 @@ export function AdminLayout() {
                   size="small"
                   style={{ backgroundColor: '#1677ff' }}
                 />
-                <span style={{ color: colorText, fontWeight: 500 }}>管理员</span>
+                <span style={{ color: colorText, fontWeight: 500 }}>{userDisplay || '管理员'}</span>
               </Space>
             </Dropdown>
           </Space>
@@ -350,8 +366,16 @@ export function AdminLayout() {
             background: colorBgContainer,
             display: 'flex',
             flexDirection: 'column',
+            padding: 16,
           }}
         >
+          {breadcrumbItems.length > 0 && (
+            <Breadcrumb style={{ marginBottom: 16 }}>
+              {breadcrumbItems.map((label) => (
+                <Breadcrumb.Item key={label}>{label}</Breadcrumb.Item>
+              ))}
+            </Breadcrumb>
+          )}
           <Outlet />
         </Content>
       </Layout>

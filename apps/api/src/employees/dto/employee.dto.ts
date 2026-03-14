@@ -1,16 +1,23 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EmploymentStatus } from '@prisma/client';
-import { IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 export class CreateEmployeeDto {
-  @ApiProperty()
+  @ApiProperty({ description: '员工姓名', maxLength: 50 })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(50)
   name!: string;
 
-  @ApiProperty({ description: '手机号（用于后续 iOS 登录绑定）' })
+  @ApiProperty({
+    description: '手机号（用于后续 iOS 登录绑定）',
+    example: '13800000000',
+    maxLength: 20,
+  })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(20)
+  @Matches(/^1\d{10}$/, { message: '手机号格式不正确，应为 1 开头的 11 位数字。' })
   phone!: string;
 
   @ApiProperty({ description: '岗位ID' })
@@ -41,16 +48,23 @@ export class CreateEmployeeDto {
 }
 
 export class UpdateEmployeeDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '员工姓名', maxLength: 50 })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(50)
   name?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    description: '手机号（用于后续 iOS 登录绑定）',
+    example: '13800000000',
+    maxLength: 20,
+  })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(20)
+  @Matches(/^1\d{10}$/, { message: '手机号格式不正确，应为 1 开头的 11 位数字。' })
   phone?: string;
 
   @ApiPropertyOptional()

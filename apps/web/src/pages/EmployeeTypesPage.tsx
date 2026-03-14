@@ -1,15 +1,26 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Button, Card, Form, Input, Modal, Select, Space, Table, Typography, message } from 'antd'
+import { Button, Card, Col, Form, Input, Modal, Row, Select, Space, Table, Typography, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useEffect, useMemo, useState } from 'react'
 import type { CreateEmployeeTypeInput, EmployeeType } from '../api/employeeTypes'
 import { createEmployeeType, deleteEmployeeType, listEmployeeTypes, updateEmployeeType } from '../api/employeeTypes'
+import { PageHeader } from '../components/PageHeader'
+import { MODAL_WIDTH, INPUT_MAX_LENGTH, PLACEHOLDER } from '../utils/formRules'
 
 type FormValues = {
   key: string
   name: string
   skillTags?: string[]
 }
+
+const SKILL_TAG_OPTIONS = [
+  { value: 'member', label: 'member - 一线员工' },
+  { value: 'admin', label: 'admin - 管理员' },
+  { value: 'sales', label: 'sales - 销售' },
+  { value: 'technician', label: 'technician - 技术' },
+  { value: 'salary', label: 'salary - 工资' },
+  { value: 'guide', label: 'guide - 引导' },
+]
 
 export function EmployeeTypesPage() {
   const [rows, setRows] = useState<EmployeeType[]>([])
@@ -33,19 +44,23 @@ export function EmployeeTypesPage() {
 
   const columns: ColumnsType<EmployeeType> = useMemo(
     () => [
-      { title: 'key', dataIndex: 'key' },
-      { title: '名称', dataIndex: 'name' },
+      { title: 'Key', dataIndex: 'key', width: 120 },
+      { title: '名称', dataIndex: 'name', width: 150 },
       {
-        title: 'skillTags',
+        title: 'Skill Tags',
         key: 'skillTags',
+        width: 200,
         render: (_, r) => (Array.isArray(r.skillTags) ? r.skillTags.join(', ') : '-'),
       },
       {
         title: '操作',
         key: 'actions',
+        width: 160,
+        fixed: 'right',
         render: (_, r) => (
           <Space>
             <Button
+              size="small"
               icon={<EditOutlined />}
               onClick={() => {
                 setEditing(r)
@@ -60,18 +75,19 @@ export function EmployeeTypesPage() {
               编辑
             </Button>
             <Button
+              size="small"
               danger
               icon={<DeleteOutlined />}
               onClick={() => {
                 Modal.confirm({
-                  title: '确认删除该员工类型？',
-                  content: '删除后，已绑定该类型的员工将变为未绑定状态（需要重新选择）。',
+                  title: '确认删除',
+                  content: `确定要删除员工类型「${r.name}」吗？删除后，已绑定该类型的员工将变为未绑定状态。`,
                   okText: '删除',
                   okButtonProps: { danger: true },
                   cancelText: '取消',
                   onOk: async () => {
                     await deleteEmployeeType(r.id)
-                    message.success('已删除')
+                    message.success('删除成功')
                     await refresh()
                   },
                 })
@@ -86,35 +102,47 @@ export function EmployeeTypesPage() {
     [form],
   )
 
+  const handleOpenModal = () => {
+    setEditing(null)
+    form.resetFields()
+    form.setFieldsValue({ skillTags: ['member'] })
+    setOpen(true)
+  }
+
+  const handleSubmit = async () => {
+    const v = await form.validateFields()
+    const payload: CreateEmployeeTypeInput = {
+      key: String(v.key).trim(),
+      name: String(v.name).trim(),
+      skillTags: (v.skillTags ?? []).map((x) => String(x).trim()).filter(Boolean),
+    }
+    if (editing) {
+      await updateEmployeeType(editing.id, payload)
+      message.success('更新成功')
+    } else {
+      await createEmployeeType(payload)
+      message.success('创建成功')
+    }
+    setOpen(false)
+    await refresh()
+  }
+
   return (
     <Card>
-      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            员工类型（Skill 挂载/路由）
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            通过 skillTags 描述该类型员工在 OpenClaw 中应路由到哪些技能（例如 member,sales / member,technician）。
-          </Typography.Text>
-        </div>
-        <Space wrap>
-          <Button icon={<ReloadOutlined />} onClick={() => refresh()} loading={loading}>
-            刷新
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditing(null)
-              form.resetFields()
-              form.setFieldsValue({ skillTags: ['member'] })
-              setOpen(true)
-            }}
-          >
-            新增员工类型
-          </Button>
-        </Space>
-      </Space>
+      <PageHeader
+        title="员工类型管理"
+        subtitle="配置员工类型及其 Skill 标签，用于 OpenClaw 路由和权限控制。"
+        extra={
+          <>
+            <Button icon={<ReloadOutlined />} onClick={() => refresh()} loading={loading}>
+              刷新
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenModal}>
+              新增类型
+            </Button>
+          </>
+        }
+      />
 
       <div style={{ height: 12 }} />
 
@@ -123,7 +151,7 @@ export function EmployeeTypesPage() {
         loading={loading}
         dataSource={rows}
         columns={columns}
-        pagination={{ pageSize: 10 }}
+        pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50] }}
         scroll={{ x: 'max-content' }}
       />
 
@@ -132,74 +160,63 @@ export function EmployeeTypesPage() {
         open={open}
         okText="保存"
         cancelText="取消"
+        width={MODAL_WIDTH.medium}
         destroyOnClose
         onCancel={() => setOpen(false)}
-        onOk={async () => {
-          const v = await form.validateFields()
-          const payload: CreateEmployeeTypeInput = {
-            key: String(v.key).trim(),
-            name: String(v.name).trim(),
-            skillTags: (v.skillTags ?? []).map((x) => String(x).trim()).filter(Boolean),
-          }
-          if (editing) {
-            await updateEmployeeType(editing.id, payload)
-            message.success('已更新')
-          } else {
-            await createEmployeeType(payload)
-            message.success('已创建')
-          }
-          setOpen(false)
-          await refresh()
-        }}
+        onOk={handleSubmit}
       >
         <Form form={form} layout="vertical">
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Key（唯一标识）"
+                name="key"
+                rules={[
+                  { required: true, message: '请输入 Key' },
+                  { pattern: /^[a-z0-9_]+$/, message: '仅允许小写字母/数字/下划线' },
+                ]}
+                extra="用于系统内部标识，创建后不可修改"
+              >
+                <Input
+                  placeholder="例如：sales / technician"
+                  maxLength={INPUT_MAX_LENGTH.code}
+                  showCount
+                  disabled={!!editing}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="名称"
+                name="name"
+                rules={[{ required: true, message: '请输入名称' }]}
+              >
+                <Input
+                  placeholder="例如：销售 / 安装工程师"
+                  maxLength={INPUT_MAX_LENGTH.name}
+                  showCount
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Form.Item
-            label="key（唯一标识）"
-            name="key"
-            rules={[
-              { required: true, message: '请输入 key' },
-              { pattern: /^[a-z0-9_]+$/, message: '仅允许小写字母/数字/下划线' },
-            ]}
+            label="Skill Tags（用于路由）"
+            name="skillTags"
+            extra={
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                推荐组合：销售 = member + sales；技术 = member + technician；管理 = admin + guide
+              </Typography.Text>
+            }
           >
-            <Input placeholder="例如：sales / technician / after_sales / pm" disabled={!!editing} />
-          </Form.Item>
-          <Form.Item label="名称" name="name" rules={[{ required: true, message: '请输入名称' }]}>
-            <Input placeholder="例如：销售 / 安装工程师 / 售后 / 项目经理" />
-          </Form.Item>
-          <Form.Item label="skillTags（用于路由）" name="skillTags">
             <Select
               mode="multiple"
-              placeholder="请选择 skillTags（可多选）"
-              options={[
-                { value: 'member', label: 'member' },
-                { value: 'admin', label: 'admin' },
-                { value: 'sales', label: 'sales' },
-                { value: 'technician', label: 'technician' },
-                { value: 'salary', label: 'salary' },
-                { value: 'guide', label: 'guide' },
-              ]}
+              placeholder={`${PLACEHOLDER.select} Skill Tags（可多选）`}
+              options={SKILL_TAG_OPTIONS}
             />
-            <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0, fontSize: 12 }}>
-              <b>含义提示</b>：
-              <br />
-              - <code>member</code>：一线员工（只能走 <code>/my</code> 系列接口）
-              <br />
-              - <code>admin</code>：管理员/负责人（偏管理引导）
-              <br />
-              - <code>sales</code>：销售上报（路由到 <code>member-sales</code>）
-              <br />
-              - <code>technician</code>：安装/调试/售后（路由到 <code>member-technician</code>）
-              <br />
-              - <code>salary</code>：工资查询（路由到 <code>member-salary</code>）
-              <br />
-              - <code>guide</code>：管理引导（路由到 <code>admin-guide</code>）
-              <br />
-              <b>推荐组合</b>：销售 = <code>member + sales</code>；安装/售后 = <code>member + technician</code>；项目经理/管理 = <code>admin + guide</code>。
-            </Typography.Paragraph>
           </Form.Item>
         </Form>
       </Modal>
     </Card>
   )
 }
-

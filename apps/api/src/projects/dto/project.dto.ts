@@ -1,16 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectStatus } from '@prisma/client';
-import {
-  IsArray,
-  IsDateString,
-  IsEnum,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Min,
-  ValidateNested,
-} from 'class-validator';
+import { IsArray, IsDateString, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Matches, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ProjectItemInput {
@@ -32,24 +22,33 @@ export class ProjectItemInput {
 }
 
 export class CreateProjectDto {
-  @ApiProperty()
+  @ApiProperty({ description: '项目名称', maxLength: 100 })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   name!: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: '项目地址', maxLength: 200 })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   address!: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: '客户姓名', maxLength: 50 })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(50)
   customerName!: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: '客户电话',
+    example: '13800000000',
+    maxLength: 20,
+  })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(20)
+  @Matches(/^1\d{10}$/, { message: '客户电话格式不正确，应为 1 开头的 11 位数字。' })
   customerPhone!: string;
 
   @ApiProperty({ description: '合同金额' })
@@ -75,28 +74,37 @@ export class CreateProjectDto {
 }
 
 export class UpdateProjectDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '项目名称', maxLength: 100 })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   name?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '项目地址', maxLength: 200 })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   address?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '客户姓名', maxLength: 50 })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(50)
   customerName?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    description: '客户电话',
+    example: '13800000000',
+    maxLength: 20,
+  })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(20)
+  @Matches(/^1\d{10}$/, { message: '客户电话格式不正确，应为 1 开头的 11 位数字。' })
   customerPhone?: string;
 
   @ApiPropertyOptional()

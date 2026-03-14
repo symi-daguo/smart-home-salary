@@ -156,11 +156,12 @@ export function LoginPage() {
                 message: '所属公司标识仅支持英文字母或数字（不含空格和符号）',
               },
             ]}
+            extra="开发/测试环境可填 acme；正式环境请向管理员获取所属公司标识。"
           >
             <Input
               size="large"
               prefix={<BankOutlined />}
-              placeholder="请输入所属公司标识（例如：acme，仅限字母或数字）"
+              placeholder="请输入所属公司标识（仅限字母或数字）"
               autoComplete="organization"
             />
           </Form.Item>

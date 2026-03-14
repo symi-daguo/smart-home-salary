@@ -1,10 +1,11 @@
 import { CheckOutlined, DollarOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Grid, Row, DatePicker, Select, Space, Table, Tag, Typography, message } from 'antd'
+import { Button, Card, Col, Grid, Row, DatePicker, Select, Space, Table, Tag, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
 import type { Salary, SalaryStatus } from '../api/salaries'
 import { listSalaries, settleSalaries, updateSalaryStatus } from '../api/salaries'
+import { PageHeader } from '../components/PageHeader'
 
 function statusTag(s: SalaryStatus) {
   if (s === 'PAID') return <Tag color="green">已发放</Tag>
@@ -81,30 +82,28 @@ export function SalariesPage() {
 
   return (
     <Card>
-      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            工资结算
-          </Typography.Title>
-          <Typography.Text type="secondary">按月结算生成工资单，并支持审批/发放标记。</Typography.Text>
-        </div>
-        <Space wrap>
-          <Button icon={<ReloadOutlined />} onClick={() => refresh()} loading={loading}>
-            刷新
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlayCircleOutlined />}
-            onClick={async () => {
-              await settleSalaries({ yearMonth })
-              message.success('已结算生成工资单')
-              await refresh()
-            }}
-          >
-            运行结算
-          </Button>
-        </Space>
-      </Space>
+      <PageHeader
+        title="工资结算"
+        subtitle="按月结算生成工资单，并支持审批/发放标记。"
+        extra={
+          <>
+            <Button icon={<ReloadOutlined />} onClick={() => refresh()} loading={loading}>
+              刷新
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlayCircleOutlined />}
+              onClick={async () => {
+                await settleSalaries({ yearMonth })
+                message.success('已结算生成工资单')
+                await refresh()
+              }}
+            >
+              运行结算
+            </Button>
+          </>
+        }
+      />
 
       <div style={{ height: 12 }} />
 
@@ -144,7 +143,7 @@ export function SalariesPage() {
         loading={loading}
         dataSource={rows}
         columns={columns}
-        pagination={{ pageSize: 10 }}
+        pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50] }}
         scroll={{ x: 'max-content' }}
       />
     </Card>

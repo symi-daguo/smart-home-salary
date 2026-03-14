@@ -1,5 +1,5 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons'
-import { Button, Card, DatePicker, Dropdown, Form, Input, Modal, Select, Space, Table, Typography, Upload, message } from 'antd'
+import { Button, Card, Col, DatePicker, Dropdown, Form, Input, Modal, Row, Select, Space, Table, Upload, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
@@ -12,6 +12,9 @@ import { listPositions } from '../api/positions'
 import { exportExcel, exportJson, importExcel, importJson } from '../api/excel'
 import { downloadBlob } from '../utils/download'
 import { http } from '../api/http'
+import { EMPLOYEE_STATUS_LABELS } from '../constants/labels'
+import { PageHeader } from '../components/PageHeader'
+import { formRules, MODAL_WIDTH, INPUT_MAX_LENGTH, PLACEHOLDER } from '../utils/formRules'
 
 type FormValues = {
   name: string
@@ -57,25 +60,35 @@ export function EmployeesPage() {
 
   const columns: ColumnsType<Employee> = useMemo(
     () => [
-      { title: '姓名', dataIndex: 'name' },
-      { title: '手机号', dataIndex: 'phone' },
+      { title: '姓名', dataIndex: 'name', width: 100 },
+      { title: '手机号', dataIndex: 'phone', width: 120 },
       {
         title: '岗位',
         key: 'position',
+        width: 120,
         render: (_, r) => r.position?.name ?? r.positionId,
       },
       {
         title: '入职日期',
         dataIndex: 'entryDate',
+        width: 110,
         render: (v) => dayjs(v).format('YYYY-MM-DD'),
       },
-      { title: '状态', dataIndex: 'status' },
+      {
+        title: '状态',
+        dataIndex: 'status',
+        width: 80,
+        render: (v: string) => EMPLOYEE_STATUS_LABELS[v] ?? v,
+      },
       {
         title: '操作',
         key: 'actions',
+        width: 160,
+        fixed: 'right',
         render: (_, r) => (
           <Space>
             <Button
+              size="small"
               icon={<EditOutlined />}
               onClick={() => {
                 setEditing(r)
@@ -94,17 +107,19 @@ export function EmployeesPage() {
               编辑
             </Button>
             <Button
+              size="small"
               danger
               icon={<DeleteOutlined />}
               onClick={() => {
                 Modal.confirm({
-                  title: '确认删除该员工？',
+                  title: '确认删除',
+                  content: `确定要删除员工「${r.name}」吗？删除后不可恢复。`,
                   okText: '删除',
                   okButtonProps: { danger: true },
                   cancelText: '取消',
                   onOk: async () => {
                     await deleteEmployee(r.id)
-                    message.success('已删除')
+                    message.success('删除成功')
                     await refresh()
                   },
                 })
@@ -119,91 +134,125 @@ export function EmployeesPage() {
     [form],
   )
 
+  const handleOpenModal = () => {
+    setEditing(null)
+    form.resetFields()
+    form.setFieldsValue({ status: 'ACTIVE' })
+    setOpen(true)
+  }
+
+  const handleSubmit = async () => {
+    const v = await form.validateFields()
+    const payload: CreateEmployeeInput = {
+      name: v.name,
+      phone: v.phone,
+      positionId: v.positionId,
+      employeeTypeId: v.employeeTypeId ?? null,
+      membershipId: v.membershipId ?? null,
+      entryDate: dayjs(v.entryDate).format('YYYY-MM-DD'),
+      status: v.status,
+    }
+    if (editing) {
+      await updateEmployee(editing.id, payload)
+      message.success('更新成功')
+    } else {
+      await createEmployee(payload)
+      message.success('创建成功')
+    }
+    setOpen(false)
+    await refresh()
+  }
+
   return (
     <Card>
-      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            员工管理
-          </Typography.Title>
-          <Typography.Text type="secondary">用于销售/技术人员的工资结算与录入关联。</Typography.Text>
-        </div>
-        <Space wrap>
-          <Button icon={<ReloadOutlined />} onClick={() => refresh()} loading={loading}>
-            刷新
-          </Button>
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  key: 'xlsx',
-                  label: '导出 Excel',
-                  onClick: async () => {
-                    const buf = await exportExcel('/excel/employees/export')
-                    downloadBlob('employees.xlsx', new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+      <PageHeader
+        title="员工管理"
+        subtitle="管理销售/技术人员信息，用于工资结算与业务关联。"
+        extra={
+          <>
+            <Button icon={<ReloadOutlined />} onClick={() => refresh()} loading={loading}>
+              刷新
+            </Button>
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'xlsx',
+                    label: '导出 Excel',
+                    onClick: async () => {
+                      const buf = await exportExcel('/excel/employees/export')
+                      downloadBlob(
+                        'employees.xlsx',
+                        new Blob([buf], {
+                          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        }),
+                      )
+                    },
                   },
-                },
-                {
-                  key: 'json',
-                  label: '导出 JSON',
-                  onClick: async () => {
-                    const rows = await exportJson<any[]>('/excel/employees/export-json')
-                    downloadBlob('employees.json', new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' }))
+                  {
+                    key: 'json',
+                    label: '导出 JSON',
+                    onClick: async () => {
+                      const rows = await exportJson<any[]>('/excel/employees/export-json')
+                      downloadBlob(
+                        'employees.json',
+                        new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' }),
+                      )
+                    },
                   },
-                },
-                {
-                  key: 'tpl',
-                  label: '下载 Excel 模板',
-                  onClick: async () => {
-                    const buf = await exportExcel('/excel/employees/template')
-                    downloadBlob('employees.template.xlsx', new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+                  {
+                    key: 'tpl',
+                    label: '下载 Excel 模板',
+                    onClick: async () => {
+                      const buf = await exportExcel('/excel/employees/template')
+                      downloadBlob(
+                        'employees.template.xlsx',
+                        new Blob([buf], {
+                          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        }),
+                      )
+                    },
                   },
-                },
-              ],
-            }}
-          >
-            <Button icon={<DownloadOutlined />}>导出/模板</Button>
-          </Dropdown>
-          <Upload
-            accept=".xlsx"
-            showUploadList={false}
-            beforeUpload={async (file) => {
-              const resp = await importExcel('/excel/employees/import', file as any)
-              message.success(`导入完成：upserted=${resp.upserted}`)
-              await refresh()
-              return false
-            }}
-          >
-            <Button icon={<UploadOutlined />}>导入 Excel</Button>
-          </Upload>
-          <Upload
-            accept=".json"
-            showUploadList={false}
-            beforeUpload={async (file) => {
-              const text = await file.text()
-              const rows = JSON.parse(text)
-              const resp = await importJson<{ upserted: number }>('/excel/employees/import-json', rows)
-              message.success(`导入完成：upserted=${resp.upserted}`)
-              await refresh()
-              return false
-            }}
-          >
-            <Button>导入 JSON</Button>
-          </Upload>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditing(null)
-              form.resetFields()
-              form.setFieldsValue({ status: 'ACTIVE' })
-              setOpen(true)
-            }}
-          >
-            新增员工
-          </Button>
-        </Space>
-      </Space>
+                ],
+              }}
+            >
+              <Button icon={<DownloadOutlined />}>导出/模板</Button>
+            </Dropdown>
+            <Upload
+              accept=".xlsx"
+              showUploadList={false}
+              beforeUpload={async (file) => {
+                const resp = await importExcel('/excel/employees/import', file as any)
+                message.success(`导入完成：upserted=${resp.upserted}`)
+                await refresh()
+                return false
+              }}
+            >
+              <Button icon={<UploadOutlined />}>导入 Excel</Button>
+            </Upload>
+            <Upload
+              accept=".json"
+              showUploadList={false}
+              beforeUpload={async (file) => {
+                const text = await file.text()
+                const rows = JSON.parse(text)
+                const resp = await importJson<{ upserted: number }>(
+                  '/excel/employees/import-json',
+                  rows,
+                )
+                message.success(`导入完成：upserted=${resp.upserted}`)
+                await refresh()
+                return false
+              }}
+            >
+              <Button>导入 JSON</Button>
+            </Upload>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenModal}>
+              新增员工
+            </Button>
+          </>
+        }
+      />
 
       <div style={{ height: 12 }} />
 
@@ -212,7 +261,7 @@ export function EmployeesPage() {
         loading={loading}
         dataSource={rows}
         columns={columns}
-        pagination={{ pageSize: 10 }}
+        pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50] }}
         scroll={{ x: 'max-content' }}
       />
 
@@ -221,69 +270,72 @@ export function EmployeesPage() {
         open={open}
         okText="保存"
         cancelText="取消"
+        width={MODAL_WIDTH.medium}
         destroyOnClose
         onCancel={() => setOpen(false)}
-        onOk={async () => {
-          const v = await form.validateFields()
-          const payload: CreateEmployeeInput = {
-            name: v.name,
-            phone: v.phone,
-            positionId: v.positionId,
-            employeeTypeId: v.employeeTypeId ?? null,
-            membershipId: v.membershipId ?? null,
-            entryDate: dayjs(v.entryDate).format('YYYY-MM-DD'),
-            status: v.status,
-          }
-          if (editing) {
-            await updateEmployee(editing.id, payload)
-            message.success('已更新')
-          } else {
-            await createEmployee(payload)
-            message.success('已创建')
-          }
-          setOpen(false)
-          await refresh()
-        }}
+        onOk={handleSubmit}
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="姓名" name="name" rules={[{ required: true, message: '请输入姓名' }]}>
-            <Input />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="姓名" name="name" rules={formRules.name()}>
+                <Input placeholder={PLACEHOLDER.name} maxLength={INPUT_MAX_LENGTH.name} showCount />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="手机号" name="phone" rules={formRules.phone}>
+                <Input placeholder={PLACEHOLDER.phone} maxLength={INPUT_MAX_LENGTH.phone} showCount />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="岗位" name="positionId" rules={[formRules.select('请选择岗位')]}>
+                <Select
+                  placeholder={`${PLACEHOLDER.select}岗位`}
+                  options={positions.map((p) => ({ value: p.id, label: p.name }))}
+                  showSearch
+                  optionFilterProp="label"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="员工类型" name="employeeTypeId" tooltip="用于 Skill 挂载/路由">
+                <Select
+                  allowClear
+                  placeholder={`${PLACEHOLDER.select}员工类型（可选）`}
+                  options={employeeTypes.map((t) => ({ value: t.id, label: `${t.name} (${t.key})` }))}
+                  showSearch
+                  optionFilterProp="label"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="入职日期" name="entryDate" rules={[formRules.date('请选择入职日期')]}>
+                <DatePicker style={{ width: '100%' }} placeholder={PLACEHOLDER.date} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="状态" name="status" rules={[formRules.required('请选择状态')]}>
+                <Select
+                  options={Object.entries(EMPLOYEE_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Form.Item
-            label="手机号"
-            name="phone"
-            rules={[
-              { required: true, message: '请输入手机号' },
-              { pattern: /^1\d{10}$/, message: '手机号格式不正确' },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item label="岗位" name="positionId" rules={[{ required: true, message: '请选择岗位' }]}>
-            <Select
-              placeholder="请选择岗位"
-              options={positions.map((p) => ({ value: p.id, label: p.name }))}
-              showSearch
-              optionFilterProp="label"
-            />
-          </Form.Item>
-          <Form.Item label="员工类型（用于 Skill 挂载/路由）" name="employeeTypeId">
-            <Select
-              allowClear
-              placeholder="可选：选择员工类型"
-              options={employeeTypes.map((t) => ({ value: t.id, label: `${t.name} (${t.key})` }))}
-              showSearch
-              optionFilterProp="label"
-            />
-          </Form.Item>
-          <Form.Item
-            label="绑定账号（用于 iOS/OpenClaw /my 能力）"
+            label="绑定账号"
             name="membershipId"
-            tooltip="只有绑定了账号后，该账号才能调用 /api/*/my 与 /api/employees/my-profile。通常用于员工端；管理员账号一般不需要绑定。"
+            tooltip="绑定账号后，该账号可调用员工端 /my 接口。管理员账号一般不需要绑定。"
           >
             <Select
               allowClear
-              placeholder="可选：选择要绑定的租户成员账号"
+              placeholder={`${PLACEHOLDER.select}要绑定的租户成员账号（可选）`}
               options={members.map((m) => ({
                 value: m.id,
                 label: `${m.user.displayName ? `${m.user.displayName} / ` : ''}${m.user.email} (${m.role})`,
@@ -292,20 +344,8 @@ export function EmployeesPage() {
               optionFilterProp="label"
             />
           </Form.Item>
-          <Form.Item label="入职日期" name="entryDate" rules={[{ required: true, message: '请选择入职日期' }]}>
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item label="状态" name="status" rules={[{ required: true }]}>
-            <Select
-              options={[
-                { value: 'ACTIVE', label: '在职' },
-                { value: 'INACTIVE', label: '离职' },
-              ]}
-            />
-          </Form.Item>
         </Form>
       </Modal>
     </Card>
   )
 }
-

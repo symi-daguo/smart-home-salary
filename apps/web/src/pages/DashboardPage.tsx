@@ -1,7 +1,5 @@
 import {
   AlertOutlined,
-  ArrowDownOutlined,
-  ArrowUpOutlined,
   SettingOutlined,
   ShoppingCartOutlined,
   TeamOutlined,
@@ -198,12 +196,7 @@ export function DashboardPage() {
               loading={loading}
             />
             <div style={{ marginTop: 8, fontSize: 12 }}>
-              <Text type="success">
-                <ArrowUpOutlined /> 12.5%
-              </Text>
-              <Text type="secondary" style={{ marginLeft: 8 }}>
-                较上月
-              </Text>
+              <Text type="secondary">环比数据待接口支持后展示</Text>
             </div>
           </Card>
         </Col>
@@ -220,12 +213,7 @@ export function DashboardPage() {
               loading={loading}
             />
             <div style={{ marginTop: 8, fontSize: 12 }}>
-              <Text type="success">
-                <ArrowUpOutlined /> 5.2%
-              </Text>
-              <Text type="secondary" style={{ marginLeft: 8 }}>
-                较上月
-              </Text>
+              <Text type="secondary">环比数据待接口支持后展示</Text>
             </div>
           </Card>
         </Col>
@@ -242,7 +230,7 @@ export function DashboardPage() {
               loading={loading}
             />
             <div style={{ marginTop: 8, fontSize: 12 }}>
-              <Text type="secondary">本月无人员变动</Text>
+              <Text type="secondary">本月在职人数</Text>
             </div>
           </Card>
         </Col>
@@ -259,12 +247,7 @@ export function DashboardPage() {
               loading={loading}
             />
             <div style={{ marginTop: 8, fontSize: 12 }}>
-              <Text type="danger">
-                <ArrowDownOutlined /> 2
-              </Text>
-              <Text type="secondary" style={{ marginLeft: 8 }}>
-                较昨日
-              </Text>
+              <Text type="secondary">需在预警中心处理</Text>
             </div>
           </Card>
         </Col>
