@@ -19,6 +19,9 @@ import { OpenClawPage } from './pages/OpenClawPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { MeasurementSurveysPage } from './pages/MeasurementSurveysPage'
 import { CurtainOrdersPage } from './pages/CurtainOrdersPage'
+import { InventoryPage } from './pages/InventoryPage'
+import { OutboundApplicationsPage } from './pages/OutboundApplicationsPage'
+import { WarehouseOrdersPage } from './pages/WarehouseOrdersPage'
 
 export default function App() {
   const token = useAuthStore((s) => s.accessToken)
@@ -80,6 +83,9 @@ export default function App() {
             <Route path="openclaw" element={<OpenClawPage />} />
             <Route path="measurement-surveys" element={<MeasurementSurveysPage />} />
             <Route path="curtain-orders" element={<CurtainOrdersPage />} />
+            <Route path="inventory" element={<InventoryPage />} />
+            <Route path="outbound-applications" element={<OutboundApplicationsPage />} />
+            <Route path="warehouse-orders" element={<WarehouseOrdersPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

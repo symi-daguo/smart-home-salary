@@ -20,6 +20,9 @@ import {
   TeamOutlined,
   ToolOutlined,
   UserOutlined,
+  ContainerOutlined,
+  AuditOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons'
 import { Avatar, Breadcrumb, Button, Dropdown, Layout, Menu, Space, Typography, theme } from 'antd'
 import type { MenuProps } from 'antd'
@@ -32,7 +35,7 @@ import { http } from '../api/http'
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
 
-const DEFAULT_OPEN_KEYS = ['org', 'biz', 'report', 'survey', 'finance'] as const
+const DEFAULT_OPEN_KEYS = ['org', 'biz', 'report', 'survey', 'finance', 'warehouse'] as const
 
 const NAV_ITEMS_ALL: NonNullable<MenuProps['items']> = [
   { key: '/dashboard', icon: <BarChartOutlined />, label: '工作台' },
@@ -74,6 +77,16 @@ const NAV_ITEMS_ALL: NonNullable<MenuProps['items']> = [
     ],
   },
   {
+    key: 'warehouse',
+    icon: <ContainerOutlined />,
+    label: '仓库管理',
+    children: [
+      { key: '/outbound-applications', icon: <AuditOutlined />, label: '出库申请单' },
+      { key: '/warehouse-orders', icon: <DatabaseOutlined />, label: '出入库单' },
+      { key: '/inventory', icon: <DatabaseOutlined />, label: '库存盘点' },
+    ],
+  },
+  {
     key: 'finance',
     icon: <SafetyCertificateOutlined />,
     label: '财务与风控',
@@ -97,6 +110,9 @@ const BREADCRUMB_MAP: Record<string, string[]> = {
   '/installation-records': ['业务上报', '技术上报'],
   '/measurement-surveys': ['测量工勘', '信息记录'],
   '/curtain-orders': ['测量工勘', '窗帘下单'],
+  '/outbound-applications': ['仓库管理', '出库申请单'],
+  '/warehouse-orders': ['仓库管理', '出入库单'],
+  '/inventory': ['仓库管理', '库存盘点'],
   '/salary': ['财务与风控', '工资结算'],
   '/alerts': ['财务与风控', '预警中心'],
   '/openclaw': ['OpenClaw 联调'],

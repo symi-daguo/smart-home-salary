@@ -5,11 +5,16 @@ export type Product = {
   name: string
   category: string
   standardPrice: string | number
+  costPrice?: string | number | null
   installationFee: string | number
   debuggingFee?: string | number | null
   otherFee?: string | number | null
   maintenanceDeposit?: string | number | null
   isSpecialInstallation: boolean
+  status?: string
+  specification?: string | null
+  unit?: string | null
+  isFabric?: boolean
   suggestedStockQty?: number | null
   techCommissionInstall?: string | number | null
   techCommissionDebug?: string | number | null
@@ -23,11 +28,15 @@ export type CreateProductInput = {
   name: string
   category: string
   standardPrice: number
+  costPrice?: number
   installationFee: number
   debuggingFee?: number
   otherFee?: number
   maintenanceDeposit?: number
   isSpecialInstallation?: boolean
+  specification?: string
+  unit?: string
+  isFabric?: boolean
   suggestedStockQty?: number
   techCommissionInstall?: number
   techCommissionDebug?: number
@@ -56,4 +65,3 @@ export async function deleteProduct(id: string) {
   const resp = await http.delete<{ success: boolean }>(`/products/${id}`)
   return resp.data
 }
-

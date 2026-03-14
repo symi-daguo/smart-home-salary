@@ -1,8 +1,24 @@
 ## 智能家居行业 SAAS 管理系统（2026 MVP）
 
-**当前版本：v1.0.3**
+**当前版本：v1.0.4**
 
 ### 版本与更新
+
+- **v1.0.4**（2026-03）
+  - **仓库管理模块（P0）**：新增完整的仓库管理功能，包括出入库单管理、库存盘点、出库申请审核流程。
+    - 出入库单类型：销售出库单、借货出库单、售后出库单、丢失出库单、销售入库单、采购入库单、售后入库单、未知入库单。
+    - 出库申请流程：销售预出库申请 → 技术预出库申请 → 确认出库审核 → 生成出库单。
+    - 自动生成流水单号：CK/RK/CG/JH/SH/DS/RH/WR + 日期 + 序号。
+    - 库存实时计算：入库+、出库-，支持库存成本统计。
+    - SN码管理：支持SN码录入和查询。
+  - **产品管理增强**：新增成本价、规格型号、单位、布匹类型标记字段，用于库存成本计算和窗帘下单识别。
+  - **数据库模型扩展**：
+    - 新增 `WarehouseOrder`、`WarehouseOrderItem`、`WarehouseOrderLog` 模型。
+    - 新增 `OutboundApplication`、`OutboundApplicationItem` 模型。
+    - 新增 `Inventory`、`AlertRule`、`CurtainRoomDetail` 模型。
+    - `Product` 模型新增 `costPrice`、`status`、`specification`、`unit`、`isFabric` 字段。
+    - `Project` 模型新增 `serviceFee`、`signDiscountRate` 字段。
+  - **前端页面新增**：库存盘点页、出库申请单页、出入库单页。
 
 - **v1.0.3**（2026-03）  
   - **表单格式统一规范化**：参考 RuoYi 开源项目规范，统一所有表单的布局、验证规则和提交逻辑。引入栅格布局（Row/Col）替代原垂直单列布局，提升空间利用率。  

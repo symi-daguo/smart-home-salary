@@ -30,6 +30,7 @@ import { ExcelModule } from './excel/excel.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { MeasurementSurveysModule } from './measurement-surveys/measurement-surveys.module';
 import { CurtainOrdersModule } from './curtain-orders/curtain-orders.module';
+import { WarehouseModule } from './warehouse/warehouse.module';
 import { CommonModule } from './common/common.module';
 import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { HttpMetricsInterceptor } from './metrics/interceptors/http-metrics.interceptor';
@@ -78,6 +79,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     UploadsModule,
     MeasurementSurveysModule,
     CurtainOrdersModule,
+    WarehouseModule,
     DashboardModule,
   ],
   controllers: [],

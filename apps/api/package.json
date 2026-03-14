@@ -1,6 +1,6 @@
 {
   "name": "multi-tenant-saas-starter-nestjs",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Production-ready NestJS SaaS starter with row-level tenant isolation using Prisma and PostgreSQL.",
   "license": "MIT",
   "scripts": {

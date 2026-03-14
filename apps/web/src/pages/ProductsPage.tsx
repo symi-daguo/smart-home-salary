@@ -15,6 +15,7 @@ type FormValues = {
   name: string
   category: string
   standardPrice: number
+  costPrice?: number
   installationFee: number
   debuggingFee?: number
   otherFee?: number
@@ -25,6 +26,9 @@ type FormValues = {
   techCommissionDebug?: number
   techCommissionMaintenance?: number
   techCommissionAfterSales?: number
+  specification?: string
+  unit?: string
+  isFabric?: boolean
 }
 
 const CATEGORY_OPTIONS = [
@@ -75,13 +79,20 @@ export function ProductsPage() {
     () => [
       { title: '商品名称', dataIndex: 'name', width: 150 },
       { title: '分类', dataIndex: 'category', width: 100 },
-      { title: '标准价', dataIndex: 'standardPrice', width: 100 },
-      { title: '安装费', dataIndex: 'installationFee', width: 100 },
+      { title: '标准价', dataIndex: 'standardPrice', width: 100, render: (v) => `¥${Number(v).toFixed(2)}` },
+      { title: '成本价', dataIndex: 'costPrice', width: 100, render: (v) => v ? `¥${Number(v).toFixed(2)}` : '-' },
+      { title: '安装费', dataIndex: 'installationFee', width: 100, render: (v) => `¥${Number(v).toFixed(2)}` },
       {
         title: '建议库存',
         dataIndex: 'suggestedStockQty',
         width: 100,
         render: (v) => (v == null ? '-' : Number(v)),
+      },
+      {
+        title: '布匹',
+        dataIndex: 'isFabric',
+        width: 70,
+        render: (v) => v ? '是' : '否',
       },
       {
         title: '特殊安装',
@@ -105,6 +116,7 @@ export function ProductsPage() {
                   name: r.name,
                   category: r.category,
                   standardPrice: Number(r.standardPrice),
+                  costPrice: r.costPrice ? Number(r.costPrice) : undefined,
                   installationFee: Number(r.installationFee),
                   debuggingFee: r.debuggingFee === null || r.debuggingFee === undefined ? undefined : Number(r.debuggingFee),
                   otherFee: r.otherFee === null || r.otherFee === undefined ? undefined : Number(r.otherFee),
@@ -113,6 +125,9 @@ export function ProductsPage() {
                       ? undefined
                       : Number(r.maintenanceDeposit),
                   isSpecialInstallation: r.isSpecialInstallation,
+                  specification: r.specification || undefined,
+                  unit: r.unit || undefined,
+                  isFabric: r.isFabric || false,
                   suggestedStockQty: r.suggestedStockQty == null ? undefined : Number(r.suggestedStockQty),
                   techCommissionInstall: r.techCommissionInstall == null ? undefined : Number(r.techCommissionInstall),
                   techCommissionDebug: r.techCommissionDebug == null ? undefined : Number(r.techCommissionDebug),
@@ -168,11 +183,15 @@ export function ProductsPage() {
       name: v.name,
       category: v.category,
       standardPrice: v.standardPrice,
+      costPrice: v.costPrice,
       installationFee: v.installationFee,
       ...(v.debuggingFee !== undefined ? { debuggingFee: v.debuggingFee } : {}),
       ...(v.otherFee !== undefined ? { otherFee: v.otherFee } : {}),
       ...(v.maintenanceDeposit !== undefined ? { maintenanceDeposit: v.maintenanceDeposit } : {}),
       isSpecialInstallation: !!v.isSpecialInstallation,
+      specification: v.specification,
+      unit: v.unit,
+      isFabric: v.isFabric,
       ...(v.suggestedStockQty !== undefined ? { suggestedStockQty: v.suggestedStockQty } : {}),
       ...(v.techCommissionInstall !== undefined ? { techCommissionInstall: v.techCommissionInstall } : {}),
       ...(v.techCommissionDebug !== undefined ? { techCommissionDebug: v.techCommissionDebug } : {}),
@@ -337,17 +356,22 @@ export function ProductsPage() {
           </Row>
 
           <Row gutter={16}>
-            <Col span={8}>
+            <Col span={6}>
               <Form.Item label="标准价" name="standardPrice" rules={formRules.amount(0, '请输入标准价')} style={{ flex: 1 }}>
                 <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder={PLACEHOLDER.amount} />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col span={6}>
+              <Form.Item label="成本价" name="costPrice">
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="用于库存成本计算" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
               <Form.Item label="安装费" name="installationFee" rules={formRules.amount(0, '请输入安装费')} style={{ flex: 1 }}>
                 <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder={PLACEHOLDER.amount} />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col span={6}>
               <Form.Item label="调试费" name="debuggingFee">
                 <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
               </Form.Item>
@@ -355,19 +379,42 @@ export function ProductsPage() {
           </Row>
 
           <Row gutter={16}>
-            <Col span={8}>
+            <Col span={6}>
               <Form.Item label="售后费" name="otherFee">
                 <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col span={6}>
               <Form.Item label="维护押金" name="maintenanceDeposit">
                 <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col span={6}>
               <Form.Item label="建议库存" name="suggestedStockQty">
                 <InputNumber style={{ width: '100%' }} min={0} precision={0} placeholder="可选" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="单位" name="unit">
+                <Input placeholder="个/套/米" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item label="规格型号" name="specification">
+                <Input placeholder="可选" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="布匹类型" name="isFabric" valuePropName="checked">
+                <Switch checkedChildren="是" unCheckedChildren="否" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="特殊安装标记" name="isSpecialInstallation" valuePropName="checked">
+                <Switch />
               </Form.Item>
             </Col>
           </Row>
@@ -397,9 +444,30 @@ export function ProductsPage() {
             </Col>
           </Row>
 
-          <Form.Item label="特殊安装标记" name="isSpecialInstallation" valuePropName="checked">
-            <Switch />
-          </Form.Item>
+          <Typography.Text strong>技术提成（可选）</Typography.Text>
+          <div style={{ height: 8 }} />
+          <Row gutter={16}>
+            <Col span={6}>
+              <Form.Item label="安装提成" name="techCommissionInstall">
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="调试提成" name="techCommissionDebug">
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="维保提成" name="techCommissionMaintenance">
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="售后提成" name="techCommissionAfterSales">
+                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Modal>
 
