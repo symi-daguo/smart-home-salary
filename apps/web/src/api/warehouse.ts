@@ -121,6 +121,19 @@ export type InventoryCost = {
   }>
 }
 
+export type WarehouseOrderLog = {
+  id: string
+  orderId: string
+  orderNo: string
+  orderType: WarehouseOrderType
+  operatorId: string
+  operatorEmail?: string
+  operatorDisplayName?: string
+  action: string
+  changes: unknown
+  createdAt: string
+}
+
 export type CreateOutboundApplicationInput = {
   type: OutboundApplicationType
   projectId?: string
@@ -256,6 +269,45 @@ export async function getInventoryCost() {
 export async function adjustInventory(productId: string, quantity: number, remark?: string) {
   const res = await http.post<Inventory>('/warehouse/inventory/adjust', { productId, quantity, remark })
   return res.data
+}
+
+export async function listWarehouseOrderLogs(params?: {
+  orderNo?: string
+  orderType?: WarehouseOrderType
+  action?: string
+  startDate?: string
+  endDate?: string
+}) {
+  const res = await http.get<
+    Array<{
+      id: string
+      orderId: string
+      action: string
+      changes: unknown
+      createdAt: string
+      order: {
+        orderNo: string
+        orderType: WarehouseOrderType
+      }
+      operator: {
+        email: string
+        displayName?: string | null
+      } | null
+    }>
+  >('/warehouse/logs', { params })
+
+  return res.data.map<WarehouseOrderLog>((log) => ({
+    id: log.id,
+    orderId: log.orderId,
+    orderNo: log.order.orderNo,
+    orderType: log.order.orderType,
+    operatorId: log.operator ? log.operator.email : '',
+    operatorEmail: log.operator?.email,
+    operatorDisplayName: log.operator?.displayName ?? undefined,
+    action: log.action,
+    changes: log.changes,
+    createdAt: log.createdAt,
+  }))
 }
 
 export const WAREHOUSE_ORDER_TYPE_LABELS: Record<WarehouseOrderType, string> = {

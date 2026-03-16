@@ -16,6 +16,7 @@ import {
   CreateWarehouseOrderDto,
   UpdateWarehouseOrderDto,
   QueryWarehouseOrderDto,
+  QueryWarehouseOrderLogDto,
 } from './dto/warehouse-order.dto'
 
 @Injectable()
@@ -485,6 +486,44 @@ export class WarehouseService {
     })
 
     return { success: true }
+  }
+
+  async listWarehouseOrderLogs(tenantId: string, query: QueryWarehouseOrderLogDto) {
+    const where: any = { tenantId }
+
+    if (query.action) {
+      where.action = query.action
+    }
+
+    if (query.startDate || query.endDate) {
+      where.createdAt = {}
+      if (query.startDate) where.createdAt.gte = new Date(query.startDate)
+      if (query.endDate) where.createdAt.lte = new Date(query.endDate)
+    }
+
+    const logs = await this.prisma.warehouseOrderLog.findMany({
+      where,
+      include: {
+        order: true,
+        operator: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    })
+
+    const filtered = query.orderNo || query.orderType
+      ? logs.filter((log) => {
+          if (query.orderNo && !log.order.orderNo.includes(query.orderNo)) {
+            return false
+          }
+          if (query.orderType && log.order.orderType !== (query.orderType as any)) {
+            return false
+          }
+          return true
+        })
+      : logs
+
+    return filtered
   }
 
   async listInventory(tenantId: string) {

@@ -12,7 +12,7 @@ export type Employee = {
   createdAt: string
   updatedAt: string
   position?: { id: string; name: string } | null
-  employeeType?: { id: string; key: string; name: string; skillTags?: any } | null
+  employeeType?: { id: string; key: string; name: string; skillTags?: string[] } | null
 }
 
 export type CreateEmployeeInput = {

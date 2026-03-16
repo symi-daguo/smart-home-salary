@@ -1,5 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsString, IsOptional, IsEnum, IsUUID, IsDateString, ValidateNested, IsArray, IsInt, Min, IsNumber } from 'class-validator'
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsUUID,
+  IsDateString,
+  ValidateNested,
+  IsArray,
+  IsInt,
+  Min,
+  IsNumber,
+} from 'class-validator'
 import { Type } from 'class-transformer'
 import { WarehouseOrderType, PaymentType } from './outbound-application.dto'
 
@@ -150,6 +161,33 @@ export class QueryWarehouseOrderDto {
   @IsOptional()
   @IsString()
   remark?: string
+
+  @ApiPropertyOptional({ description: '开始日期' })
+  @IsOptional()
+  @IsDateString()
+  startDate?: string
+
+  @ApiPropertyOptional({ description: '结束日期' })
+  @IsOptional()
+  @IsDateString()
+  endDate?: string
+}
+
+export class QueryWarehouseOrderLogDto {
+  @ApiPropertyOptional({ description: '单据编号（模糊搜索）' })
+  @IsOptional()
+  @IsString()
+  orderNo?: string
+
+  @ApiPropertyOptional({ description: '单据类型', enum: WarehouseOrderType })
+  @IsOptional()
+  @IsEnum(WarehouseOrderType)
+  orderType?: WarehouseOrderType
+
+  @ApiPropertyOptional({ description: '操作类型（如 UPDATE/DELETE）' })
+  @IsOptional()
+  @IsString()
+  action?: string
 
   @ApiPropertyOptional({ description: '开始日期' })
   @IsOptional()

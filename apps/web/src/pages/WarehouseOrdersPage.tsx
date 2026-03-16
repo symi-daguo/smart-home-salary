@@ -1,8 +1,25 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Button, Card, Col, DatePicker, Form, Input, InputNumber, Modal, Row, Select, Space, Table, Tabs, Tag, message } from 'antd'
+import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import {
+  Button,
+  Card,
+  Col,
+  DatePicker,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Row,
+  Select,
+  Space,
+  Table,
+  Tabs,
+  Tag,
+  message,
+} from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   listWarehouseOrders,
   createWarehouseOrder,
@@ -47,6 +64,7 @@ const INBOUND_TYPES: WarehouseOrderType[] = [
 ]
 
 export function WarehouseOrdersPage() {
+  const location = useLocation()
   const [loading, setLoading] = useState(false)
   const [rows, setRows] = useState<WarehouseOrder[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -58,6 +76,7 @@ export function WarehouseOrdersPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'outbound' | 'inbound'>('all')
   const [editing, setEditing] = useState<WarehouseOrder | null>(null)
   const [items, setItems] = useState<ItemRow[]>([])
+  const [filterForm] = Form.useForm()
 
   const productOptions = useMemo(
     () => products.map((p) => ({ value: p.id, label: `${p.name}（${p.category}）` })),
@@ -72,8 +91,20 @@ export function WarehouseOrdersPage() {
   const load = async () => {
     setLoading(true)
     try {
+      const values = filterForm.getFieldsValue()
+      const [start, end] = values.range || []
+      const params: Parameters<typeof listWarehouseOrders>[0] = {}
+
+      if (values.orderType) params.orderType = values.orderType
+      if (values.projectId) params.projectId = values.projectId
+      if (values.productName) params.productName = values.productName.trim()
+      if (values.snCode) params.snCode = values.snCode.trim()
+      if (values.remark) params.remark = values.remark.trim()
+      if (start) params.startDate = (start as dayjs.Dayjs).startOf('day').toISOString()
+      if (end) params.endDate = (end as dayjs.Dayjs).endOf('day').toISOString()
+
       const [orderList, prodList, projList, empList] = await Promise.all([
-        listWarehouseOrders(),
+        listWarehouseOrders(params),
         listProducts(),
         listProjects(),
         listEmployees(),
@@ -93,11 +124,44 @@ export function WarehouseOrdersPage() {
     load()
   }, [])
 
+  useEffect(() => {
+    if (location.pathname.includes('/warehouse-orders/outbound-')) {
+      setActiveTab('outbound')
+    } else if (location.pathname.includes('/warehouse-orders/inbound-')) {
+      setActiveTab('inbound')
+    } else {
+      setActiveTab('all')
+    }
+  }, [location.pathname])
+
   const filteredRows = useMemo(() => {
-    if (activeTab === 'all') return rows
-    if (activeTab === 'outbound') return rows.filter((r) => OUTBOUND_TYPES.includes(r.orderType))
-    return rows.filter((r) => INBOUND_TYPES.includes(r.orderType))
-  }, [rows, activeTab])
+    let data = rows
+    if (activeTab === 'outbound') {
+      data = data.filter((r) => OUTBOUND_TYPES.includes(r.orderType))
+    } else if (activeTab === 'inbound') {
+      data = data.filter((r) => INBOUND_TYPES.includes(r.orderType))
+    }
+
+    if (location.pathname.endsWith('/outbound-sales')) {
+      data = data.filter((r) => r.orderType === WarehouseOrderType.OUTBOUND_SALES)
+    } else if (location.pathname.endsWith('/outbound-loan')) {
+      data = data.filter((r) => r.orderType === WarehouseOrderType.OUTBOUND_LOAN)
+    } else if (location.pathname.endsWith('/outbound-after-sales')) {
+      data = data.filter((r) => r.orderType === WarehouseOrderType.OUTBOUND_AFTER_SALES)
+    } else if (location.pathname.endsWith('/outbound-lost')) {
+      data = data.filter((r) => r.orderType === WarehouseOrderType.OUTBOUND_LOST)
+    } else if (location.pathname.endsWith('/inbound-sales')) {
+      data = data.filter((r) => r.orderType === WarehouseOrderType.INBOUND_SALES)
+    } else if (location.pathname.endsWith('/inbound-purchase')) {
+      data = data.filter((r) => r.orderType === WarehouseOrderType.INBOUND_PURCHASE)
+    } else if (location.pathname.endsWith('/inbound-after-sales')) {
+      data = data.filter((r) => r.orderType === WarehouseOrderType.INBOUND_AFTER_SALES)
+    } else if (location.pathname.endsWith('/inbound-unknown')) {
+      data = data.filter((r) => r.orderType === WarehouseOrderType.INBOUND_UNKNOWN)
+    }
+
+    return data
+  }, [rows, activeTab, location.pathname])
 
   const columns: ColumnsType<WarehouseOrder> = [
     {
@@ -296,8 +360,18 @@ export function WarehouseOrdersPage() {
         subtitle="管理各类出入库单据，支持产品、SN码、快递单号等信息录入"
         extra={
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
-              刷新
+            <Button icon={<SearchOutlined />} onClick={load} loading={loading}>
+              查询
+            </Button>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                filterForm.resetFields()
+                load()
+              }}
+              loading={loading}
+            >
+              重置
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenModal(WarehouseOrderType.OUTBOUND_SALES)}>
               销售出库
@@ -310,6 +384,61 @@ export function WarehouseOrdersPage() {
       />
 
       <div style={{ height: 16 }} />
+
+      <Form
+        form={filterForm}
+        layout="inline"
+        style={{ marginBottom: 16, rowGap: 8 }}
+        onFinish={load}
+      >
+        <Form.Item label="类型" name="orderType">
+          <Select
+            allowClear
+            style={{ width: 180 }}
+            options={Object.entries(WAREHOUSE_ORDER_TYPE_LABELS).map(([value, label]) => ({
+              value,
+              label,
+            }))}
+          />
+        </Form.Item>
+        <Form.Item label="项目" name="projectId">
+          <Select
+            allowClear
+            showSearch
+            style={{ width: 200 }}
+            placeholder={`${PLACEHOLDER.select}项目`}
+            options={projectOptions}
+            optionFilterProp="label"
+          />
+        </Form.Item>
+        <Form.Item label="产品名称" name="productName">
+          <Input placeholder="支持模糊搜索" allowClear />
+        </Form.Item>
+        <Form.Item label="SN 码" name="snCode">
+          <Input placeholder="单个 SN 号" allowClear />
+        </Form.Item>
+        <Form.Item label="备注" name="remark">
+          <Input placeholder="备注关键字" allowClear />
+        </Form.Item>
+        <Form.Item label="发生时间" name="range">
+          <DatePicker.RangePicker allowEmpty={[true, true]} />
+        </Form.Item>
+        <Form.Item>
+          <Space>
+            <Button type="primary" htmlType="submit" icon={<SearchOutlined />} loading={loading}>
+              查询
+            </Button>
+            <Button
+              onClick={() => {
+                filterForm.resetFields()
+                load()
+              }}
+            >
+              重置
+            </Button>
+          </Space>
+        </Form.Item>
+      </Form>
 
       <Tabs
         activeKey={activeTab}

@@ -1,8 +1,25 @@
-import { PlusOutlined, ReloadOutlined, CheckOutlined, CloseOutlined, SendOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Form, Input, InputNumber, Modal, Row, Select, Space, Table, Tabs, Tag, message } from 'antd'
+import { PlusOutlined, ReloadOutlined, CheckOutlined, CloseOutlined, SendOutlined, SearchOutlined } from '@ant-design/icons'
+import {
+  Button,
+  Card,
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Row,
+  Select,
+  Space,
+  Table,
+  Tabs,
+  Tag,
+  DatePicker,
+  message,
+} from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   listOutboundApplications,
   createOutboundApplication,
@@ -50,6 +67,7 @@ function statusTag(status: OutboundApplicationStatus) {
 }
 
 export function OutboundApplicationsPage() {
+  const location = useLocation()
   const [loading, setLoading] = useState(false)
   const [rows, setRows] = useState<OutboundApplication[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -64,6 +82,7 @@ export function OutboundApplicationsPage() {
   const [approveOpen, setApproveOpen] = useState(false)
   const [approveForm] = Form.useForm()
   const [approvingApp, setApprovingApp] = useState<OutboundApplication | null>(null)
+  const [filterForm] = Form.useForm()
 
   const productOptions = useMemo(
     () => products.map((p) => ({ value: p.id, label: `${p.name}（${p.category}）` })),
@@ -78,8 +97,17 @@ export function OutboundApplicationsPage() {
   const load = async () => {
     setLoading(true)
     try {
+      const values = filterForm.getFieldsValue()
+      const [start, end] = values.range || []
+      const params: Parameters<typeof listOutboundApplications>[0] = {}
+      if (values.type) params.type = values.type
+      if (values.status) params.status = values.status
+      if (values.projectId) params.projectId = values.projectId
+      if (start) params.startDate = (start as dayjs.Dayjs).startOf('day').toISOString()
+      if (end) params.endDate = (end as dayjs.Dayjs).endOf('day').toISOString()
+
       const [appList, prodList, projList, empList] = await Promise.all([
-        listOutboundApplications(),
+        listOutboundApplications(params),
         listProducts(),
         listProjects(),
         listEmployees(),
@@ -99,10 +127,26 @@ export function OutboundApplicationsPage() {
     load()
   }, [])
 
+  useEffect(() => {
+    if (location.pathname.endsWith('/sales-pre')) {
+      setActiveTab(OutboundApplicationType.SALES_PRE)
+    } else if (location.pathname.endsWith('/tech-pre')) {
+      setActiveTab(OutboundApplicationType.TECH_PRE)
+    } else {
+      setActiveTab('all')
+    }
+  }, [location.pathname])
+
   const filteredRows = useMemo(() => {
-    if (activeTab === 'all') return rows
-    return rows.filter((r) => r.type === activeTab)
-  }, [rows, activeTab])
+    let data = rows
+    if (location.pathname.endsWith('/review')) {
+      data = data.filter((r) => r.status === OutboundApplicationStatus.PENDING_REVIEW)
+    }
+    if (activeTab !== 'all') {
+      data = data.filter((r) => r.type === activeTab)
+    }
+    return data
+  }, [rows, activeTab, location.pathname])
 
   const columns: ColumnsType<OutboundApplication> = [
     {
@@ -359,8 +403,18 @@ export function OutboundApplicationsPage() {
         subtitle="管理销售预出库申请、技术预出库申请及审核流程"
         extra={
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
-              刷新
+            <Button icon={<SearchOutlined />} onClick={load} loading={loading}>
+              查询
+            </Button>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                filterForm.resetFields()
+                load()
+              }}
+              loading={loading}
+            >
+              重置
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenModal(OutboundApplicationType.SALES_PRE)}>
               销售预出库申请
@@ -373,6 +427,62 @@ export function OutboundApplicationsPage() {
       />
 
       <div style={{ height: 16 }} />
+
+      <Form
+        form={filterForm}
+        layout="inline"
+        style={{ marginBottom: 16, rowGap: 8 }}
+        onFinish={load}
+      >
+        <Form.Item label="类型" name="type">
+          <Select
+            allowClear
+            style={{ width: 180 }}
+            options={Object.entries(OUTBOUND_APPLICATION_TYPE_LABELS).map(([value, label]) => ({
+              value,
+              label,
+            }))}
+          />
+        </Form.Item>
+        <Form.Item label="状态" name="status">
+          <Select
+            allowClear
+            style={{ width: 160 }}
+            options={Object.entries(OUTBOUND_APPLICATION_STATUS_LABELS).map(([value, label]) => ({
+              value,
+              label,
+            }))}
+          />
+        </Form.Item>
+        <Form.Item label="项目" name="projectId">
+          <Select
+            allowClear
+            showSearch
+            style={{ width: 200 }}
+            placeholder={`${PLACEHOLDER.select}项目`}
+            options={projectOptions}
+            optionFilterProp="label"
+          />
+        </Form.Item>
+        <Form.Item label="创建时间" name="range">
+          <DatePicker.RangePicker allowEmpty={[true, true]} />
+        </Form.Item>
+        <Form.Item>
+          <Space>
+            <Button type="primary" htmlType="submit" icon={<SearchOutlined />} loading={loading}>
+              查询
+            </Button>
+            <Button
+              onClick={() => {
+                filterForm.resetFields()
+                load()
+              }}
+            >
+              重置
+            </Button>
+          </Space>
+        </Form.Item>
+      </Form>
 
       <Tabs
         activeKey={activeTab}

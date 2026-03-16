@@ -4,8 +4,8 @@ export type Position = {
   id: string
   name: string
   baseSalary: string | number
-  commissionRule: any
-  bonusRule?: any | null
+  commissionRule: Record<string, unknown>
+  bonusRule?: Record<string, unknown> | null
   phoneAllowance: string | number
   transportAllowance: string | number
   otherAllowance: string | number
@@ -16,8 +16,8 @@ export type Position = {
 export type CreatePositionInput = {
   name: string
   baseSalary: number
-  commissionRule: Record<string, any>
-  bonusRule?: Record<string, any>
+  commissionRule: Record<string, unknown>
+  bonusRule?: Record<string, unknown>
   phoneAllowance?: number
   transportAllowance?: number
   otherAllowance?: number

@@ -25,6 +25,11 @@ export type Permission =
   | 'projects.manage'
   | 'projects.read'
   | 'entries.manage'
+  | 'warehouse.apply'
+  | 'warehouse.review'
+  | 'warehouse.orders.manage'
+  | 'warehouse.inventory.read'
+  | 'warehouse.logs.read'
   | 'sales.create'
   | 'sales.read'
   | 'installation.create'
@@ -52,6 +57,11 @@ const ROLE_PERMISSIONS: Record<RoleType, Permission[]> = {
     'projects.manage',
     'projects.read',
     'entries.manage',
+    'warehouse.apply',
+    'warehouse.review',
+    'warehouse.orders.manage',
+    'warehouse.inventory.read',
+    'warehouse.logs.read',
     'sales.create',
     'sales.read',
     'installation.create',
@@ -75,6 +85,10 @@ const ROLE_PERMISSIONS: Record<RoleType, Permission[]> = {
     'projects.manage',
     'projects.read',
     'entries.manage',
+    'warehouse.apply',
+    'warehouse.review',
+    'warehouse.orders.manage',
+    'warehouse.inventory.read',
     'sales.create',
     'sales.read',
     'installation.create',

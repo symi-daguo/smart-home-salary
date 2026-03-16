@@ -19,7 +19,7 @@ export async function exportJson<T>(path: string) {
   return resp.data
 }
 
-export async function importJson<TResp>(path: string, rows: any[]) {
+export async function importJson<TResp, TRow = unknown>(path: string, rows: TRow[]) {
   const resp = await http.post<TResp>(path, rows, { headers: { 'Content-Type': 'application/json' } })
   return resp.data
 }

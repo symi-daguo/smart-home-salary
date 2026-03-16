@@ -8,7 +8,7 @@ export type Alert = {
   severity: AlertSeverity
   title: string
   message: string
-  metadata?: any
+  metadata?: Record<string, unknown> | null
   resolvedAt?: string | null
   createdAt: string
 }
@@ -23,7 +23,7 @@ export async function listAlerts(params?: { projectId?: string; severity?: Alert
 }
 
 export async function runAlertCompare(projectId: string) {
-  const resp = await http.post<any>('/alerts/run', { projectId })
+  const resp = await http.post<{ success: boolean }>('/alerts/run', { projectId })
   return resp.data
 }
 

@@ -22,6 +22,7 @@ import { CurtainOrdersPage } from './pages/CurtainOrdersPage'
 import { InventoryPage } from './pages/InventoryPage'
 import { OutboundApplicationsPage } from './pages/OutboundApplicationsPage'
 import { WarehouseOrdersPage } from './pages/WarehouseOrdersPage'
+import { WarehouseOrderLogsPage } from './pages/WarehouseOrderLogsPage'
 
 export default function App() {
   const token = useAuthStore((s) => s.accessToken)
@@ -85,7 +86,19 @@ export default function App() {
             <Route path="curtain-orders" element={<CurtainOrdersPage />} />
             <Route path="inventory" element={<InventoryPage />} />
             <Route path="outbound-applications" element={<OutboundApplicationsPage />} />
+            <Route path="outbound-applications/sales-pre" element={<OutboundApplicationsPage />} />
+            <Route path="outbound-applications/tech-pre" element={<OutboundApplicationsPage />} />
+            <Route path="outbound-applications/review" element={<OutboundApplicationsPage />} />
             <Route path="warehouse-orders" element={<WarehouseOrdersPage />} />
+            <Route path="warehouse-orders/outbound-sales" element={<WarehouseOrdersPage />} />
+            <Route path="warehouse-orders/outbound-loan" element={<WarehouseOrdersPage />} />
+            <Route path="warehouse-orders/outbound-after-sales" element={<WarehouseOrdersPage />} />
+            <Route path="warehouse-orders/outbound-lost" element={<WarehouseOrdersPage />} />
+            <Route path="warehouse-orders/inbound-sales" element={<WarehouseOrdersPage />} />
+            <Route path="warehouse-orders/inbound-purchase" element={<WarehouseOrdersPage />} />
+            <Route path="warehouse-orders/inbound-after-sales" element={<WarehouseOrdersPage />} />
+            <Route path="warehouse-orders/inbound-unknown" element={<WarehouseOrdersPage />} />
+            <Route path="warehouse-order-logs" element={<WarehouseOrderLogsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -4,7 +4,7 @@ export type EmployeeType = {
   id: string
   key: string
   name: string
-  skillTags?: any
+  skillTags?: string[]
   createdAt: string
   updatedAt: string
 }

@@ -81,9 +81,22 @@ const NAV_ITEMS_ALL: NonNullable<MenuProps['items']> = [
     icon: <ContainerOutlined />,
     label: '仓库管理',
     children: [
-      { key: '/outbound-applications', icon: <AuditOutlined />, label: '出库申请单' },
-      { key: '/warehouse-orders', icon: <DatabaseOutlined />, label: '出入库单' },
-      { key: '/inventory', icon: <DatabaseOutlined />, label: '库存盘点' },
+      { key: '/outbound-applications', icon: <AuditOutlined />, label: '出库申请单（全部）' },
+      { key: '/outbound-applications/sales-pre', icon: <AuditOutlined />, label: '销售预出库申请' },
+      { key: '/outbound-applications/tech-pre', icon: <AuditOutlined />, label: '技术预出库申请' },
+      { key: '/outbound-applications/review', icon: <AuditOutlined />, label: '确认出库审核' },
+      { type: 'divider' },
+      { key: '/warehouse-orders/outbound-sales', icon: <DatabaseOutlined />, label: '销售出库单' },
+      { key: '/warehouse-orders/outbound-loan', icon: <DatabaseOutlined />, label: '借货出库单' },
+      { key: '/warehouse-orders/outbound-after-sales', icon: <DatabaseOutlined />, label: '售后出库单' },
+      { key: '/warehouse-orders/outbound-lost', icon: <DatabaseOutlined />, label: '丢失出库单' },
+      { key: '/warehouse-orders/inbound-sales', icon: <DatabaseOutlined />, label: '销售入库单' },
+      { key: '/warehouse-orders/inbound-purchase', icon: <DatabaseOutlined />, label: '采购入库单' },
+      { key: '/warehouse-orders/inbound-after-sales', icon: <DatabaseOutlined />, label: '售后入库单' },
+      { key: '/warehouse-orders/inbound-unknown', icon: <DatabaseOutlined />, label: '未知入库单' },
+      { type: 'divider' },
+      { key: '/inventory', icon: <DatabaseOutlined />, label: '库存盘点统计' },
+      { key: '/warehouse-order-logs', icon: <AuditOutlined />, label: '修改出入库单日志' },
     ],
   },
   {
@@ -286,12 +299,12 @@ export function AdminLayout() {
         >
           {!collapsed && (
             <Text type="secondary" style={{ fontSize: 12 }}>
-              SYMI v1.0.3 (2026)
+              SYMI v1.0.5 (2026)
             </Text>
           )}
           {collapsed && (
             <Text type="secondary" style={{ fontSize: 10 }}>
-              v1.0.3
+              v1.0.5
             </Text>
           )}
         </div>
