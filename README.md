@@ -1,166 +1,517 @@
-## 智能家居行业 SAAS 管理系统（2026 MVP）
+# SYMI - 智能家居行业SAAS管理系统
 
-**当前版本：v1.0.6**
+[![Version](https://img.shields.io/badge/version-v1.0.7-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](infra/docker-compose.yml)
+[![Tech Stack](https://img.shields.io/badge/tech-NestJS%20%2B%20React-orange.svg)]()
 
-### 版本与更新
-
-- **v1.0.6**（2026-03）
-  - **仓库管理前后端补齐（对齐成熟方案）**：出库申请单、出入库单和库存盘点页面补充类型/项目/产品名称/SN 码/备注/时间范围等筛选条件，并统一通过后端查询参数过滤，支持按不同菜单路径自动过滤到各自的出/入库单类型。  
-  - **出入库修改日志落地**：后端新增 `GET /api/warehouse/logs` 接口并接入权限码 `warehouse.logs.read`，前端「修改出入库单日志」页面从真实接口加载最近 200 条日志，展示单据编号/类型/操作人/时间/操作类型及字段变更摘要，仅 OWNER 角色可访问。  
-  - **Docker 环境接口自检（含仓库模块）**：在本地 Docker Compose 环境下，使用开发账号 `founder@yoursaas.com` 与租户 `acme` 逐一验证了出库申请列表、出入库单列表、库存盘点统计和出入库日志接口均返回 200，确保仓库模块在容器内与主业务模块一同正常工作。
-
-- **v1.0.5**（2026-03）
-  - **前端类型与规则收紧（第一阶段）**：按模块从公共 `api/*` 开始去除 `any`，为后续全面类型校验打基础。`positions` 的提成/奖金规则改为 `Record<string, unknown>`，`employees`/`employeeTypes` 的 `skillTags` 统一为 `string[]`，`alerts` 的 `metadata` 收紧为结构化对象并为 `runAlertCompare` 补全返回类型；`excel.importJson` 改为泛型，消除裸 `any[]`。  
-  - **版本标识与界面文案**：更新前端 `package.json` 版本号至 `1.0.5`，同步侧边栏底部版本文案，保持文档与界面版本一致。
-
-- **v1.0.4**（2026-03）
-  - **仓库管理模块（P0）**：新增完整的仓库管理功能，包括出入库单管理、库存盘点、出库申请审核流程。
-    - 出入库单类型：销售出库单、借货出库单、售后出库单、丢失出库单、销售入库单、采购入库单、售后入库单、未知入库单。
-    - 出库申请流程：销售预出库申请 → 技术预出库申请 → 确认出库审核 → 生成出库单。
-    - 自动生成流水单号：CK/RK/CG/JH/SH/DS/RH/WR + 日期 + 序号。
-    - 库存实时计算：入库+、出库-，支持库存成本统计。
-    - SN码管理：支持SN码录入和查询。
-  - **产品管理增强**：新增成本价、规格型号、单位、布匹类型标记字段，用于库存成本计算和窗帘下单识别。
-  - **数据库模型扩展**：
-    - 新增 `WarehouseOrder`、`WarehouseOrderItem`、`WarehouseOrderLog` 模型。
-    - 新增 `OutboundApplication`、`OutboundApplicationItem` 模型。
-    - 新增 `Inventory`、`AlertRule`、`CurtainRoomDetail` 模型。
-    - `Product` 模型新增 `costPrice`、`status`、`specification`、`unit`、`isFabric` 字段。
-    - `Project` 模型新增 `serviceFee`、`signDiscountRate` 字段。
-  - **前端页面新增**：库存盘点页、出库申请单页、出入库单页。
-
-- **v1.0.3**（2026-03）  
-  - **表单格式统一规范化**：参考 RuoYi 开源项目规范，统一所有表单的布局、验证规则和提交逻辑。引入栅格布局（Row/Col）替代原垂直单列布局，提升空间利用率。  
-  - **弹窗尺寸标准化**：定义统一的弹窗尺寸常量（small: 480px / medium: 640px / large: 800px / xlarge: 960px / full: 1200px），确保所有弹窗显示一致。  
-  - **输入验证增强**：创建统一的 `formRules.ts` 验证规则文件，包含手机号、邮箱、金额、折扣率等常用验证规则；添加 `maxLength` 和 `showCount` 属性限制输入长度。  
-  - **占位符文本统一**：创建 `PLACEHOLDER` 常量对象，统一所有表单的占位符文本格式。  
-  - **优化页面**：岗位管理、员工管理、员工类型、商品管理、项目管理、销售上报、技术上报、测量工勘、窗帘下单等 9 个核心业务页面。
-
-- **v1.0.2**（2026-03）  
-  - **统一页面头部与新增入口体验**：为岗位/员工/员工类型/商品/项目/销售上报/技术上报/预警中心/工资结算等主业务页引入统一的 `PageHeader`，左侧展示标题与说明，右侧统一承载「刷新 / 导出/模板 / 导入 / 新增」等操作按钮，点击新增的方式与界面效果在各模块保持一致。  
-  - **列表分页与可见性优化**：上述主业务页及测量工勘/窗帘下单页面的表格分页统一为每页 10 条且支持选择 10/20/50 条，方便在记录较多时按需调整分页大小。  
-  - **信息架构优化（面包屑）**：在管理端内容区域顶部增加按路由映射的中文面包屑（如「组织架构 / 岗位管理」「业务上报 / 销售上报」），帮助用户在多模块间快速确认当前位置。  
-  - 以上调整对应内部文档《需求资料/UI与功能规范差距分析及优化方案.md》中 P1 的一部分执行项。
-
-- **v1.0.1**（2026-03）  
-  - **Web 管理端 P0 规范优化**：顶部栏展示当前公司名称与当前用户昵称/邮箱（替代原「所属公司ID」「管理员」硬编码）；员工状态、预警级别等列表与筛选统一为中文（在职/离职、提示/警告/严重）；工作台统计卡片去掉写死的环比数据，改为「环比数据待接口支持后展示」等说明文案；登录页「所属公司」增加说明「开发/测试环境可填 acme；正式环境请向管理员获取」。  
-  - 详见内部文档《需求资料/UI与功能规范差距分析及优化方案.md》中的 P0 执行清单。
-
-- **v1.0.0**：Web 管理端 + 后端 API MVP 功能完整可用，Docker 一键部署与升级流程就绪。
-
-### 项目简介
-
-- **业务目标**：围绕智能家居公司，统一管理项目/商品/岗位/员工/销售上报/技术上报/工资结算与预警，替代 Excel 人工统计。  
-- **技术目标**：采用 2026 年可免费商用的现代技术栈，多租户隔离 + RBAC + 可观测性完备，支持 Docker 一键部署与平滑升级。  
-- **范围约束**：当前版本只提供 **Web 管理端 + 后端 API**，iOS 员工端仍规划中；仓库/库存模块已在 v1.0.4 起落地代码并随主应用一同部署。  
-- **来源说明**：本项目基于 MIT 授权的 [Multi-Tenant-SaaS-Starter-NestJS](https://github.com/OwaliShawon/Multi-Tenant-SaaS-Starter-NestJS) 二次开发，保留其多租户/RBAC/审计/Feature Flags 等基础能力，并在此基础上扩展智能家居行业的工资与业务管理模块。根目录 `LICENSE` 继续采用 MIT，**允许商用与闭源集成**。
+> 面向智能家居行业的全栈式SaaS管理平台，提供项目、库存、工资、预警一体化解决方案。
 
 ---
 
-### 目录结构（对 GitHub 可见部分）
+## 📋 目录
 
-- `apps/api/`：后端 API（NestJS 11 + Prisma 6.19 + PostgreSQL + Redis）  
-  - 保留 Starter 的基础模块：`auth/tenants/users/memberships/rbac/feature-flags/audit/billing/notifications/cache/logger/metrics/tracing/health/common`。  
-  - 新增业务模块：  
-    - `positions/`：岗位管理（底薪 + JSON 提成规则 + 补贴）  
-    - `employee-types/`：员工类型 + `skillTags`（与 OpenClaw 员工智能体路由联动）  
-    - `employees/`：员工档案（岗位/员工类型/账号绑定）  
-    - `products/` + `product-categories/`：商品与分类（包含建议库存数量和技术提成字段）  
-    - `projects/` + `projectItems/`：项目与标准产品清单  
-    - `sales-orders/` + `sales-order-items/`：销售上报与明细  
-    - `installation-records/`：技术上报（安装/调试/售后）  
-    - `measurement-surveys/`：测量工勘信息记录（本轮已实现）  
-    - `curtain-orders/`：窗帘下单基础录入（本轮已实现，复杂自动出库/折扣联动未实现）  
-    - `alerts/`：销售 vs 技术数量差异预警（数量规则已实现）  
-    - `salaries/`：工资结算（底薪 + 提成 + 技术费 + 补贴 − 扣款）  
-    - `excel/`：Excel / JSON 导入导出（员工/商品/项目/销售订单）  
-    - `uploads/`：收款截图/施工照片/视频上传（MinIO / S3）  
-    - `dashboard/`：工作台统计（总览/趋势/分布/动态列表）  
-    - `warehouse/`：仓库管理（出库申请单、出入库单、库存/成本统计，含 SN 管理与 RBAC 权限控制）  
-
-- `apps/web/`：Web 管理后台（Vite + React 18 + TypeScript + Ant Design 5 + React Router + Zustand + Axios）  
-  - 页面菜单：登录、工作台、岗位管理、员工管理、员工类型、商品管理、项目管理、销售上报、技术上报、测量工勘（信息记录/窗帘下单）、工资结算、预警中心、OpenClaw 联调、系统设置。  
-  - 支持 Excel/JSON 导入导出入口（员工/商品/项目/销售订单）。
-
-- `infra/`：部署与运维  
-  - `docker-compose.yml`：本地开发/试用环境（Postgres + Redis + MinIO + API + Web + OpenClaw）。  
-  - `docker-compose.prod.yml`：生产/伙伴云服务器部署（不直接暴露 DB/Redis/MinIO/API 端口，依赖反向代理/负载均衡）。  
-  - `backup/`：Postgres + MinIO 备份/恢复脚本及 crontab 示例。
-
-- `skills/`：OpenClaw Skill 定义（仅文档，不含业务密钥）  
-  - `salary-assistant/`：统一工资助手（按角色分发到下游 Skills）。  
-  - `member-sales/`：销售岗，只调用 `/api/sales-orders/my` + 项目查询。  
-  - `member-technician/`：技术岗，只调用 `/api/installation-records/my` + 项目/商品查询。  
-  - `member-salary/`：员工工资查询，只调用 `/api/salaries/my`。  
-  - `admin-guide/`：管理引导，强调用 Web 管理端完成统计/审批/测量工勘/窗帘下单等管理操作。  
-  - `employee-skill-router/`：根据语义与 `EmployeeType.skillTags` 路由到上述 Skills，并强制“提交前二次确认”。  
-  - `taxonomy-smart-home/`：智能家居岗位与产品词典，用于归一化口语表达。
-
-- `需求资料/`：业务/需求/会议记录等 **内部文档目录**，**已在根 `.gitignore` 中排除，不会推送到 GitHub**。  
-  - 例如 `需求资料/README.md`、`项目开发完成情况审查报告` 等，只用于本地开发与验收，不属于可公开发布内容。
-
-> 说明：根目录新增的 `.gitignore` 会忽略 `node_modules/`、`dist/`、`.env`、`infra/.env.prod`、`coverage/` 与 `需求资料/` 目录，避免把依赖、构建产物、环境变量和内部需求文档推送到 GitHub。
+- [项目简介](#-项目简介)
+- [功能特性](#-功能特性)
+- [技术架构](#-技术架构)
+- [快速开始](#-快速开始)
+- [部署指南](#-部署指南)
+- [使用指南](#-使用指南)
+- [API文档](#-api文档)
+- [版本历史](#-版本历史)
+- [贡献指南](#-贡献指南)
+- [许可证](#-许可证)
 
 ---
 
-### 部署与构建（简要）
+## 🏠 项目简介
 
-#### 本地开发 / 试用环境
+**SYMI**是一款专为智能家居行业设计的SaaS管理系统，帮助企业管理项目、库存、员工工资和业务预警，替代传统Excel人工统计方式。
 
-```bash
-docker compose -f infra/docker-compose.yml up -d --build
+### 核心价值
+
+- **业务自动化**：自动计算安装费、调试费、销售提成和月度工资
+- **库存实时管控**：多类型出入库单管理，实时库存盘点
+- **项目全周期管理**：从签约到完工的项目跟踪与成本核算
+- **智能预警系统**：库存预警、折扣率预警、收款预警
+- **多租户架构**：支持多公司独立运营，数据完全隔离
+
+### 适用场景
+
+- 智能家居集成商
+- 智能安防工程公司
+- 全屋智能解决方案提供商
+- 智能窗帘/照明/门锁等单品代理商
+
+---
+
+## ✨ 功能特性
+
+### 1. 组织架构管理
+- 岗位管理：底薪 + 提成规则配置
+- 员工类型：技能标签与OpenClaw智能体联动
+- 员工档案：岗位绑定、账号管理
+
+### 2. 业务管理
+- **商品管理**：标准价、成本价、技术提成、建议库存
+- **项目管理**：合同金额、签单折扣率、标准产品清单
+- **销售上报**：收款记录、销售订单管理
+- **技术上报**：安装记录、调试记录、售后记录
+
+### 3. 仓库管理
+- **出库申请流程**：销售预出库 → 技术预出库 → 确认审核 → 生成出库单
+- **出入库单类型**：
+  - 出库：销售出库、借货出库、售后出库、丢失出库
+  - 入库：销售入库、采购入库、售后入库、未知入库
+- **库存盘点**：实时库存查询、成本统计
+- **SN码管理**：序列号录入与追踪
+
+### 4. 测量工勘
+- 信息记录：现场测量数据、图片上传
+- 窗帘下单：复杂窗帘配置、自动成本计算
+
+### 5. 财务与风控
+- **工资结算**：底薪 + 提成 + 技术费 + 补贴 - 扣款
+- **预警中心**：
+  - 库存预警：低于建议库存自动提醒
+  - 折扣率预警：低于85折或签单折扣率报警
+  - 收款预警：已收款低于出库金额报警
+
+### 6. 系统功能
+- Excel/JSON导入导出
+- 图片/视频上传（MinIO）
+- 工作台数据看板
+- OpenClaw员工智能体联调
+
+---
+
+## 🏗️ 技术架构
+
+### 系统架构图
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        前端层 (Frontend)                         │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │  React 18 + TypeScript + Ant Design 5 + Vite               ││
+│  │  - Web管理后台 (apps/web)                                   ││
+│  │  - 响应式设计、权限控制、表单验证                            ││
+│  └─────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        网关层 (Gateway)                          │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │  Nginx / Traefik - 反向代理、负载均衡、SSL终止              ││
+│  └─────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        API层 (Backend)                           │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │  NestJS 11 + Prisma 6.19 + TypeScript                      ││
+│  │  - 多租户隔离 (Tenant Context)                              ││
+│  │  - RBAC权限控制 (Owner/Admin/Member)                        ││
+│  │  - JWT认证 + 刷新令牌                                       ││
+│  │  - 审计日志、功能开关、限流控制                              ││
+│  └─────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+   ┌──────────┐         ┌──────────┐         ┌──────────┐
+   │ PostgreSQL│         │  Redis   │         │  MinIO   │
+   │  (主数据库)│         │ (缓存)   │         │ (对象存储)│
+   └──────────┘         └──────────┘         └──────────┘
 ```
 
-- Web 管理后台：`http://localhost:5173`  
-- 后端 API：`http://localhost:3000/api`  
-- Swagger：`http://localhost:3000/docs`  
-- MinIO 控制台：`http://localhost:9001`（开发默认账号/密码：`minioadmin/minioadmin`，仅限本地）  
-- OpenClaw Control UI：`http://localhost:18789/`
+### 技术栈详情
 
-#### 伙伴云服务器部署（生产）
-
-1. 在云服务器安装 Docker / Docker Compose。  
-2. 克隆本仓库到云服务器（建议私有仓库）：  
-   ```bash
-   git clone <your-private-repo-url> smart-home-salary
-   cd smart-home-salary
-   cp infra/.env.prod.example infra/.env.prod
-   # 编辑 infra/.env.prod，填入强随机密钥与域名相关配置
-   ```
-3. 启动生产栈：  
-   ```bash
-   docker compose --env-file infra/.env.prod -f infra/docker-compose.prod.yml up -d --build
-   ```
-4. 在云厂商控制台或自建 Nginx/Caddy 上配置域名与 HTTPS，80/443 反代到 `web` 容器，`/api` 再转发到 `api` 容器。
-
-升级时，只需在云服务器上 `git pull`（或切换到你标记的 tag），然后重复执行同一条 `docker compose --env-file ... up -d --build`，API 容器会自动执行 `prisma migrate deploy` 应用向前迁移。
+| 层级 | 技术 | 版本 | 用途 |
+|------|------|------|------|
+| 前端 | React | 18.x | UI框架 |
+| 前端 | TypeScript | 5.x | 类型安全 |
+| 前端 | Ant Design | 5.x | 组件库 |
+| 前端 | Vite | 7.x | 构建工具 |
+| 后端 | NestJS | 11.x | API框架 |
+| 后端 | Prisma | 6.19.x | ORM |
+| 后端 | PostgreSQL | 17.x | 数据库 |
+| 后端 | Redis | 7.x | 缓存 |
+| 存储 | MinIO | latest | 对象存储 |
+| 部署 | Docker | - | 容器化 |
 
 ---
 
-### 开源与隐私合规说明
+## 🚀 快速开始
 
-- **上游授权**：  
-  - 基础项目来自 MIT 协议的 `Multi-Tenant-SaaS-Starter-NestJS`，本仓库在根目录保留 MIT `LICENSE`，并在其中注明来源与原作者版权。MIT 允许商用、二次开发与闭源集成，只需保留版权声明与许可文本。  
+### 环境要求
 
-- **隐私与敏感信息**：  
-  - 本仓库不包含任何生产环境 `.env` / 密钥 / 账号密码；  
-  - 配置文件模板使用占位符（如 `REPLACE_*`），需要在部署时由你或伙伴在 `infra/.env.prod` 中填入强随机值；  
-  - `需求资料/` 目录包含内部需求与会议记录，已通过 `.gitignore` 排除，**不会推送到 GitHub**；  
-  - 所有第三方依赖（NestJS/Prisma/React/AntD 等）均来自公开可商用的开源项目，其许可证保留在各自 `node_modules/**/LICENSE*` 文件中。  
+- **Docker**: 24.0+ (推荐)
+- **Node.js**: 20+ (本地开发)
+- **Git**: 任意版本
 
-- **仓库可见性**：  
-  - 若希望完全私有使用，可在 GitHub 仓库设置中将 `smart-home-salary` 设置为 **Private**，仅授权的协作者可访问。  
-  - 即便设置为 Public，当前代码结构在 `.gitignore` 约束下不会暴露任何生产密钥或内部需求文档。
+### 方式一：Docker一键部署（推荐）
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/symi-daguo/smart-home-salary.git
+cd smart-home-salary
+
+# 2. 启动所有服务
+docker compose -f infra/docker-compose.yml up -d --build
+
+# 3. 等待服务启动（约30秒）
+sleep 30
+
+# 4. 访问系统
+# Web管理端: http://localhost:5173
+# API文档: http://localhost:3000/docs
+```
+
+**默认账号**：
+- 邮箱：`founder@yoursaas.com`
+- 密码：`password`
+- 租户：`acme`
+
+### 方式二：本地开发环境
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/symi-daguo/smart-home-salary.git
+cd smart-home-salary
+
+# 2. 安装依赖
+npm install
+
+# 3. 配置环境变量
+cp apps/api/.env.example apps/api/.env
+# 编辑 apps/api/.env，配置数据库连接
+
+# 4. 启动数据库
+docker compose -f infra/docker-compose.yml up -d postgres redis minio
+
+# 5. 执行数据库迁移
+cd apps/api
+npx prisma migrate dev
+npx prisma db seed
+
+# 6. 启动后端
+cd apps/api
+npm run start:dev
+
+# 7. 启动前端（新终端）
+cd apps/web
+npm run dev
+```
 
 ---
 
-### Skills 文档与 OpenClaw 适配
+## 📦 部署指南
 
-`skills/` 目录下的所有 `SKILL.md` 已按当前后端 API 及 RBAC 规则更新，核心约束包括：
+### 生产环境部署
 
-- 所有 MEMBER 类 Skills 只调用 `/api/*/my` 与只读查询接口（`/api/projects`、`/api/products`），并严格通过 JWT + `X-Tenant-ID` 访问当前租户自己的数据。  
-- 管理类操作（测量工勘/窗帘下单/工资结算/预警统计等）由 `admin-guide` Skill 引导到 Web 管理端完成，不在聊天中返回全员敏感数据。  
-- `employee-skill-router` 与 `taxonomy-smart-home` 负责意图分类与字段归一化，并统一要求在真正调用 `POST /api/*/my` 前向员工展示“表单摘要”，员工必须回复“确认”才提交，避免误填。  
+#### 1. 服务器准备
 
-这些文档不会包含任何密钥，仅描述调用方式和安全边界，适合直接随代码仓库开源或发给伙伴团队使用。
+```bash
+# 安装 Docker 和 Docker Compose
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
 
+# 安装 Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+```
+
+#### 2. 配置环境
+
+```bash
+# 克隆代码
+git clone https://github.com/symi-daguo/smart-home-salary.git
+cd smart-home-salary
+
+# 复制生产环境配置
+cp infra/.env.prod.example infra/.env.prod
+
+# 编辑配置（必须修改）
+nano infra/.env.prod
+```
+
+**关键配置项**：
+
+```env
+# 数据库（使用强密码）
+DATABASE_URL=postgresql://user:STRONG_PASSWORD@postgres:5432/smarthome
+
+# JWT密钥（生成随机字符串）
+JWT_ACCESS_SECRET=your-random-access-secret
+JWT_REFRESH_SECRET=your-random-refresh-secret
+
+# MinIO（使用强密码）
+MINIO_ROOT_USER=admin
+MINIO_ROOT_PASSWORD=STRONG_PASSWORD
+
+# 域名配置
+DOMAIN=your-domain.com
+```
+
+#### 3. 启动服务
+
+```bash
+# 启动生产环境
+docker compose --env-file infra/.env.prod -f infra/docker-compose.prod.yml up -d --build
+
+# 查看日志
+docker compose -f infra/docker-compose.prod.yml logs -f
+
+# 检查状态
+docker compose -f infra/docker-compose.prod.yml ps
+```
+
+#### 4. 配置HTTPS（Nginx示例）
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    # 前端静态资源
+    location / {
+        proxy_pass http://localhost:5173;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # API代理
+    location /api {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+#### 5. 数据备份
+
+```bash
+# 自动备份脚本
+cd infra/backup
+chmod +x backup.sh
+
+# 添加到定时任务
+crontab -e
+# 添加: 0 2 * * * /path/to/smart-home-salary/infra/backup/backup.sh
+```
+
+---
+
+## 📖 使用指南
+
+### 首次使用
+
+1. **登录系统**
+   - 访问 Web 管理端
+   - 使用默认账号登录
+   - 首次登录后修改密码
+
+2. **基础配置**
+   - 进入「系统设置」→「公司信息」
+   - 配置公司Logo、名称、联系方式
+   - 设置默认岗位和员工类型
+
+3. **添加员工**
+   - 进入「组织架构」→「员工管理」
+   - 点击「新增」创建员工档案
+   - 绑定系统账号（可选）
+
+### 日常操作流程
+
+#### 项目管理流程
+
+```
+创建项目 → 添加标准产品清单 → 销售上报 → 出库申请 → 技术安装 → 项目完工
+```
+
+1. **创建项目**
+   - 进入「业务管理」→「项目管理」
+   - 填写客户信息、合同金额、签单折扣率
+   - 添加标准产品清单
+
+2. **销售上报**
+   - 进入「业务上报」→「销售上报」
+   - 选择项目，录入收款金额
+   - 上传收款截图
+
+3. **出库申请**
+   - 进入「仓库管理」→「销售预出库申请」
+   - 选择项目，添加出库商品
+   - 提交申请等待审核
+
+4. **审核出库**
+   - 库管进入「确认出库审核」
+   - 核对商品数量和类型
+   - 确认生成出库单
+
+5. **技术安装**
+   - 技术人员进入「业务上报」→「技术上报」
+   - 录入安装/调试记录
+   - 关联出库商品
+
+#### 工资结算流程
+
+```
+月底结算 → 选择员工 → 自动计算 → 确认生成 → 导出工资单
+```
+
+1. 进入「财务与风控」→「工资结算」
+2. 选择结算月份
+3. 系统自动计算：底薪 + 提成 + 技术费 + 补贴 - 扣款
+4. 核对无误后确认生成
+5. 导出Excel工资单
+
+### 常见问题
+
+#### Q1: 如何修改员工提成规则？
+
+进入「组织架构」→「岗位管理」，编辑对应岗位的「提成规则」JSON配置。
+
+#### Q2: 库存数量不对怎么办？
+
+进入「仓库管理」→「库存盘点统计」，查看实时库存。如需调整，创建「未知入库单」或「丢失出库单」进行库存修正。
+
+#### Q3: 预警信息太多如何关闭？
+
+进入「财务与风控」→「预警中心」，点击对应预警的「标记已处理」。如需调整预警规则，联系系统管理员。
+
+#### Q4: 如何导出数据？
+
+各列表页面右上角均有「导出」按钮，支持Excel和JSON格式导出。
+
+#### Q5: Docker部署后无法访问？
+
+检查步骤：
+1. `docker compose ps` 查看容器状态
+2. `docker compose logs api` 查看后端日志
+3. 确认端口未被占用（3000, 5173, 5432, 6379, 9000, 9001）
+4. 检查防火墙设置
+
+---
+
+## 📚 API文档
+
+系统提供完整的RESTful API，文档通过Swagger自动生成。
+
+### 访问方式
+
+- **本地开发**: http://localhost:3000/docs
+- **生产环境**: https://your-domain.com/api/docs
+
+### 认证方式
+
+所有API请求需要携带JWT令牌：
+
+```http
+Authorization: Bearer <access_token>
+X-Tenant-ID: <tenant_id>
+```
+
+### 主要API模块
+
+| 模块 | 基础路径 | 说明 |
+|------|---------|------|
+| 认证 | `/api/auth` | 登录、注册、刷新令牌 |
+| 租户 | `/api/tenants` | 租户管理、成员管理 |
+| 岗位 | `/api/positions` | 岗位CRUD、提成规则 |
+| 员工 | `/api/employees` | 员工档案管理 |
+| 商品 | `/api/products` | 商品管理、库存查询 |
+| 项目 | `/api/projects` | 项目管理、统计接口 |
+| 销售 | `/api/sales-orders` | 销售上报 |
+| 技术 | `/api/installation-records` | 安装调试记录 |
+| 仓库 | `/api/warehouse` | 出入库单、库存、日志 |
+| 工资 | `/api/salaries` | 工资结算 |
+| 预警 | `/api/alerts` | 预警列表、运行检查 |
+
+---
+
+## 📝 版本历史
+
+### v1.0.7 (2026-03-16)
+
+**新增功能**：
+- 产品技术提成字段（安装/调试/维保/售后）
+- 出库申请单流程优化（支持修改、选择出库类型）
+- 出入库单关联链路（relatedOrderIds字段）
+- 项目管理折扣率计算（stats接口）
+- 预警中心规则引擎（库存/折扣率/收款预警）
+- 关联项目产品优先（by-project接口）
+- 仓库管理菜单层级优化（三级菜单）
+- 测试数据导入脚本
+
+### v1.0.6 (2026-03)
+
+- 仓库管理前后端补齐
+- 出入库修改日志落地
+- Docker环境接口自检
+
+### v1.0.5 (2026-03)
+
+- 前端类型与规则收紧
+- 版本标识与界面文案统一
+
+### v1.0.4 (2026-03)
+
+- 仓库管理模块（P0）
+- 产品管理增强
+- 数据库模型扩展
+
+[查看更多版本历史](CHANGELOG.md)
+
+---
+
+## 🤝 贡献指南
+
+欢迎提交Issue和Pull Request！
+
+### 开发流程
+
+1. Fork本仓库
+2. 创建功能分支：`git checkout -b feature/your-feature`
+3. 提交更改：`git commit -m 'feat: add some feature'`
+4. 推送分支：`git push origin feature/your-feature`
+5. 创建Pull Request
+
+### 代码规范
+
+- 使用TypeScript严格模式
+- 遵循ESLint规则
+- 提交前运行测试：`npm test`
+- 保持提交信息清晰
+
+---
+
+## 📄 许可证
+
+[MIT](LICENSE) © 2026 SYMI团队
+
+本项目基于 [Multi-Tenant-SaaS-Starter-NestJS](https://github.com/OwaliShawon/Multi-Tenant-SaaS-Starter-NestJS) 二次开发，保留MIT许可证。
+
+---
+
+## 💬 联系我们
+
+- **GitHub Issues**: [提交问题](https://github.com/symi-daguo/smart-home-salary/issues)
+- **邮箱**: 303316404@qq.com
+
+---
+
+**Built with ❤️ for the Smart Home Industry**

@@ -6,6 +6,7 @@ import {
   WarehouseOrderType,
   PaymentType,
 } from './dto/outbound-application.dto'
+import { WarehouseOrderType as PrismaWarehouseOrderType } from '@prisma/client'
 import {
   CreateOutboundApplicationDto,
   UpdateOutboundApplicationDto,
@@ -245,6 +246,7 @@ export class WarehouseService {
           status: 'CONVERTED',
           reviewerId,
           reviewedAt: new Date(),
+          finalOrderType: dto.orderType as PrismaWarehouseOrderType,
         },
       })
 

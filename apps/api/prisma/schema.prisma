@@ -637,18 +637,19 @@ model Inventory {
 // 出库申请单
 // =========================
 model OutboundApplication {
-  id          String                    @id @default(uuid())
-  tenantId    String
-  orderNo     String                    @unique
-  type        OutboundApplicationType
-  status      OutboundApplicationStatus @default(DRAFT)
-  projectId   String?
-  applicantId String
-  reviewerId  String?
-  reviewedAt  DateTime?
-  remark      String?
-  createdAt   DateTime                  @default(now())
-  updatedAt   DateTime                  @updatedAt
+  id             String                    @id @default(uuid())
+  tenantId       String
+  orderNo        String                    @unique
+  type           OutboundApplicationType
+  status         OutboundApplicationStatus @default(DRAFT)
+  projectId      String?
+  applicantId    String
+  reviewerId     String?
+  reviewedAt     DateTime?
+  finalOrderType WarehouseOrderType?
+  remark         String?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
 
   tenant         Tenant                    @relation(fields: [tenantId], references: [id])
   project        Project?                  @relation(fields: [projectId], references: [id])
@@ -686,21 +687,22 @@ model OutboundApplicationItem {
 // 出入库单
 // =========================
 model WarehouseOrder {
-  id             String             @id @default(uuid())
-  tenantId       String
-  orderNo        String             @unique
-  orderType      WarehouseOrderType
-  projectId      String?
-  relatedOrderId String?
-  applicationId  String?            @unique
-  occurredAt     DateTime           @default(now())
-  paymentType    PaymentType?
-  expressNo      String?
-  images         Json?
-  remark         String?
-  operatorId     String?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id              String             @id @default(uuid())
+  tenantId        String
+  orderNo         String             @unique
+  orderType       WarehouseOrderType
+  projectId       String?
+  relatedOrderId  String?
+  relatedOrderIds String?
+  applicationId   String?            @unique
+  occurredAt      DateTime           @default(now())
+  paymentType     PaymentType?
+  expressNo       String?
+  images          Json?
+  remark          String?
+  operatorId      String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   tenant      Tenant               @relation(fields: [tenantId], references: [id])
   project     Project?             @relation(fields: [projectId], references: [id])

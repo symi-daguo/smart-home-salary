@@ -37,6 +37,13 @@ export class AlertsController {
     return this.alerts.run(dto);
   }
 
+  @Post('run-all')
+  @RequirePermissions('entries.manage')
+  @ApiOperation({ summary: '运行所有预警检查（库存预警、折扣率预警、收款不足预警）' })
+  async runAll() {
+    return this.alerts.runAllAlerts();
+  }
+
   @Patch(':id/resolve')
   @RequirePermissions('alerts.read')
   @ApiOperation({ summary: '标记预警为已处理' })

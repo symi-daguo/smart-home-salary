@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { AlertSeverity } from '@prisma/client';
+import { AlertSeverity, AlertType, ProductStatus, ProjectStatus } from '@prisma/client';
 import { PrismaService } from '../common/prisma.service';
 
 type CompareBreakdownItem = {
@@ -18,6 +18,14 @@ type CompareResult = {
   severity: AlertSeverity;
   breakdown: CompareBreakdownItem[];
 };
+
+function toNumber(d: any): number {
+  if (d === null || d === undefined) return 0;
+  if (typeof d === 'number') return d;
+  if (typeof d === 'string') return Number(d);
+  if (typeof d?.toNumber === 'function') return d.toNumber();
+  return Number(d);
+}
 
 @Injectable()
 export class AlertsService {
@@ -137,6 +145,191 @@ export class AlertsService {
       throw new BadRequestException('MVP 先要求传 projectId');
     }
     return this.compareAndCreateAlert(dto.projectId);
+  }
+
+  async checkStockAlerts() {
+    const products = await this.prisma.product.findMany({
+      where: this.prisma.getTenantWhere({ status: ProductStatus.ACTIVE }),
+      include: { inventory: true },
+    });
+
+    const alerts: any[] = [];
+
+    for (const product of products) {
+      const stock = product.inventory?.quantity ?? 0;
+      const suggested = product.suggestedStockQty ?? 0;
+
+      if (suggested > 0 && stock < suggested) {
+        const severity = stock === 0 ? AlertSeverity.CRITICAL : AlertSeverity.WARNING;
+        const alert = await this.prisma.alert.create({
+          data: this.prisma.getTenantData({
+            alertType: AlertType.INVENTORY,
+            severity,
+            title: `库存不足预警：${product.name}`,
+            message: `产品「${product.name}」当前库存 ${stock}，低于建议库存 ${suggested}`,
+            metadata: {
+              productId: product.id,
+              productName: product.name,
+              currentStock: stock,
+              suggestedStock: suggested,
+            },
+          }),
+        });
+        alerts.push(alert);
+      }
+    }
+
+    return alerts;
+  }
+
+  async checkDiscountRateAlerts() {
+    const projects = await this.prisma.project.findMany({
+      where: this.prisma.getTenantWhere({ status: ProjectStatus.DONE }),
+      include: {
+        salesOrders: { where: { verified: true } },
+        warehouseOrders: {
+          where: { orderType: 'OUTBOUND_SALES' },
+          include: { items: { include: { product: true } } },
+        },
+      },
+    });
+
+    const alerts: any[] = [];
+
+    for (const project of projects) {
+      const serviceFee = toNumber(project.serviceFee) || 0;
+      const signDiscountRate = toNumber(project.signDiscountRate) || 1;
+
+      const salesAmount = project.salesOrders.reduce(
+        (sum, order) => sum + toNumber(order.amount),
+        0,
+      );
+
+      const outboundAmount = project.warehouseOrders.reduce(
+        (sum, order) =>
+          sum +
+          order.items.reduce(
+            (itemSum, item) =>
+              itemSum + toNumber(item.product?.standardPrice) * item.quantity,
+            0,
+          ),
+        0,
+      );
+
+      let productDiscountRate = 1;
+      if (outboundAmount - serviceFee > 0) {
+        productDiscountRate = (salesAmount - serviceFee) / (outboundAmount - serviceFee);
+      }
+
+      if (productDiscountRate < 0.85) {
+        const alert = await this.prisma.alert.create({
+          data: this.prisma.getTenantData({
+            projectId: project.id,
+            alertType: AlertType.SALES,
+            severity: AlertSeverity.WARNING,
+            title: `折扣率过低预警：${project.name}`,
+            message: `项目「${project.name}」产品折扣率 ${(productDiscountRate * 100).toFixed(2)}%，低于85%`,
+            metadata: {
+              projectName: project.name,
+              productDiscountRate,
+              salesAmount,
+              outboundAmount,
+              serviceFee,
+            },
+          }),
+        });
+        alerts.push(alert);
+      }
+
+      if (signDiscountRate && productDiscountRate < signDiscountRate) {
+        const alert = await this.prisma.alert.create({
+          data: this.prisma.getTenantData({
+            projectId: project.id,
+            alertType: AlertType.SALES,
+            severity: AlertSeverity.INFO,
+            title: `折扣率低于签单折扣率：${project.name}`,
+            message: `项目「${project.name}」产品折扣率 ${(productDiscountRate * 100).toFixed(2)}%，低于签单折扣率 ${(signDiscountRate * 100).toFixed(2)}%`,
+            metadata: {
+              projectName: project.name,
+              productDiscountRate,
+              signDiscountRate,
+            },
+          }),
+        });
+        alerts.push(alert);
+      }
+    }
+
+    return alerts;
+  }
+
+  async checkPaymentBelowOutbound() {
+    const projects = await this.prisma.project.findMany({
+      where: this.prisma.getTenantWhere(),
+      include: {
+        salesOrders: { where: { verified: true } },
+        warehouseOrders: {
+          where: { orderType: 'OUTBOUND_SALES' },
+          include: { items: { include: { product: true } } },
+        },
+      },
+    });
+
+    const alerts: any[] = [];
+
+    for (const project of projects) {
+      const salesAmount = project.salesOrders.reduce(
+        (sum, order) => sum + toNumber(order.amount),
+        0,
+      );
+
+      const outboundAmount = project.warehouseOrders.reduce(
+        (sum, order) =>
+          sum +
+          order.items.reduce(
+            (itemSum, item) =>
+              itemSum + toNumber(item.unitPrice || item.product?.standardPrice) * item.quantity,
+            0,
+          ),
+        0,
+      );
+
+      if (salesAmount < outboundAmount) {
+        const alert = await this.prisma.alert.create({
+          data: this.prisma.getTenantData({
+            projectId: project.id,
+            alertType: AlertType.SALES,
+            severity: AlertSeverity.WARNING,
+            title: `收款不足预警：${project.name}`,
+            message: `项目「${project.name}」已收款 ${salesAmount.toFixed(2)}，低于出库金额 ${outboundAmount.toFixed(2)}`,
+            metadata: {
+              projectName: project.name,
+              salesAmount,
+              outboundAmount,
+              diff: outboundAmount - salesAmount,
+            },
+          }),
+        });
+        alerts.push(alert);
+      }
+    }
+
+    return alerts;
+  }
+
+  async runAllAlerts() {
+    const [stockAlerts, discountAlerts, paymentAlerts] = await Promise.all([
+      this.checkStockAlerts(),
+      this.checkDiscountRateAlerts(),
+      this.checkPaymentBelowOutbound(),
+    ]);
+
+    return {
+      stockAlerts: stockAlerts.length,
+      discountAlerts: discountAlerts.length,
+      paymentAlerts: paymentAlerts.length,
+      total: stockAlerts.length + discountAlerts.length + paymentAlerts.length,
+    };
   }
 }
 

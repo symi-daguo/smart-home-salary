@@ -41,6 +41,21 @@ export type CreateProjectInput = {
 
 export type UpdateProjectInput = Partial<CreateProjectInput>
 
+export type ProjectStats = {
+  projectId: string
+  projectName: string
+  serviceFee: number
+  signDiscountRate: number
+  salesAmount: number
+  outboundAmount: number
+  installFee: number
+  debugFee: number
+  productDiscountRate: number
+  comprehensiveDiscountRate: number
+  originalReceivable: number
+  discountedReceivable: number
+}
+
 export async function listProjects(params?: { q?: string; limit?: number }) {
   const resp = await http.get<Project[]>('/projects', { params })
   return resp.data
@@ -63,6 +78,11 @@ export async function updateProject(id: string, input: UpdateProjectInput) {
 
 export async function deleteProject(id: string) {
   const resp = await http.delete<{ success: boolean }>(`/projects/${id}`)
+  return resp.data
+}
+
+export async function getProjectStats(id: string) {
+  const resp = await http.get<ProjectStats>(`/projects/${id}/stats`)
   return resp.data
 }
 

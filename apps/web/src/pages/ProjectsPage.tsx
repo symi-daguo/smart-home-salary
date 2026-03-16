@@ -1,10 +1,10 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, UploadOutlined, DownloadOutlined, BarChartOutlined } from '@ant-design/icons'
 import { Button, Card, Col, DatePicker, Dropdown, Form, Input, InputNumber, Modal, Row, Select, Space, Table, Tag, Typography, Upload, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
-import type { CreateProjectInput, Project, ProjectItemInput, ProjectStatus } from '../api/projects'
-import { createProject, deleteProject, getProject, listProjects, updateProject } from '../api/projects'
+import type { CreateProjectInput, Project, ProjectItemInput, ProjectStatus, ProjectStats } from '../api/projects'
+import { createProject, deleteProject, getProject, listProjects, updateProject, getProjectStats } from '../api/projects'
 import type { Product } from '../api/products'
 import { listProducts } from '../api/products'
 import { exportExcel, exportJson, importExcel, importJson } from '../api/excel'
@@ -44,6 +44,12 @@ export function ProjectsPage() {
   const [form] = Form.useForm<FormValues>()
 
   const [items, setItems] = useState<ItemRow[]>([])
+
+  // 项目统计相关状态
+  const [statsOpen, setStatsOpen] = useState(false)
+  const [statsLoading, setStatsLoading] = useState(false)
+  const [statsData, setStatsData] = useState<ProjectStats | null>(null)
+  const [statsProjectName, setStatsProjectName] = useState('')
 
   async function refresh() {
     setLoading(true)
@@ -86,10 +92,29 @@ export function ProjectsPage() {
       {
         title: '操作',
         key: 'actions',
-        width: 160,
+        width: 220,
         fixed: 'right',
         render: (_, r) => (
           <Space>
+            <Button
+              size="small"
+              icon={<BarChartOutlined />}
+              onClick={async () => {
+                setStatsOpen(true)
+                setStatsLoading(true)
+                setStatsProjectName(r.name)
+                try {
+                  const stats = await getProjectStats(r.id)
+                  setStatsData(stats)
+                } catch (e: any) {
+                  message.error(e?.message ?? '获取统计失败')
+                } finally {
+                  setStatsLoading(false)
+                }
+              }}
+            >
+              统计
+            </Button>
             <Button
               size="small"
               icon={<EditOutlined />}
@@ -438,6 +463,68 @@ export function ProjectsPage() {
             ]}
           />
         </Form>
+      </Modal>
+
+      {/* 项目统计弹窗 */}
+      <Modal
+        title={`项目统计 - ${statsProjectName}`}
+        open={statsOpen}
+        onCancel={() => setStatsOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setStatsOpen(false)}>
+            关闭
+          </Button>,
+        ]}
+        width={700}
+      >
+        {statsLoading ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>加载中...</div>
+        ) : statsData ? (
+          <div>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <Card size="small" title="基础信息">
+                  <p>服务费: ¥{statsData.serviceFee.toFixed(2)}</p>
+                  <p>签单折扣率: {(statsData.signDiscountRate * 100).toFixed(1)}%</p>
+                </Card>
+              </Col>
+              <Col span={12}>
+                <Card size="small" title="金额汇总">
+                  <p>销售上报金额: ¥{statsData.salesAmount.toFixed(2)}</p>
+                  <p>出库产品金额: ¥{statsData.outboundAmount.toFixed(2)}</p>
+                </Card>
+              </Col>
+            </Row>
+            <div style={{ height: 16 }} />
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <Card size="small" title="技术费用">
+                  <p>安装费: ¥{statsData.installFee.toFixed(2)}</p>
+                  <p>调试费: ¥{statsData.debugFee.toFixed(2)}</p>
+                </Card>
+              </Col>
+              <Col span={12}>
+                <Card size="small" title="折扣率">
+                  <p>产品折扣率: {(statsData.productDiscountRate * 100).toFixed(2)}%</p>
+                  <p>综合折扣率: {(statsData.comprehensiveDiscountRate * 100).toFixed(2)}%</p>
+                </Card>
+              </Col>
+            </Row>
+            <div style={{ height: 16 }} />
+            <Card size="small" title="应收款计算" style={{ backgroundColor: '#f6ffed' }}>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Typography.Text strong>原价应收款: ¥{statsData.originalReceivable.toFixed(2)}</Typography.Text>
+                </Col>
+                <Col span={12}>
+                  <Typography.Text strong type="success">折扣后应收款: ¥{statsData.discountedReceivable.toFixed(2)}</Typography.Text>
+                </Col>
+              </Row>
+            </Card>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: 40 }}>暂无统计数据</div>
+        )}
       </Modal>
     </Card>
   )

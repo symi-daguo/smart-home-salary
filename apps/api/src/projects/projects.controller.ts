@@ -31,6 +31,17 @@ export class ProjectsController {
     return this.projects.get(id);
   }
 
+  @Get(':id/stats')
+  @RequirePermissions('projects.manage', 'projects.read')
+  @ApiOperation({ summary: '获取项目统计数据（折扣率、应收款等）' })
+  @ApiResponse({
+    status: 200,
+    description: '返回项目统计数据',
+  })
+  async getStats(@Param('id') id: string) {
+    return this.projects.getProjectStats(id);
+  }
+
   @Post()
   @RequirePermissions('projects.manage')
   @ApiOperation({ summary: '创建项目（可同时提交产品清单）' })

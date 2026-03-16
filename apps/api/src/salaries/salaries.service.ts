@@ -73,11 +73,34 @@ export class SalariesService {
     return list[list.length - 1]?.rate ?? 0;
   }
 
-  private feeByServiceType(serviceType: ServiceType, product: { installationFee: any; debuggingFee: any; otherFee: any }) {
-    if (serviceType === ServiceType.INSTALL) return toNumber(product.installationFee);
-    if (serviceType === ServiceType.DEBUG) return toNumber(product.debuggingFee) || toNumber(product.installationFee);
-    // AFTER_SALES
-    return toNumber(product.otherFee);
+  private feeByServiceType(
+    serviceType: ServiceType,
+    product: {
+      installationFee: any;
+      debuggingFee: any;
+      otherFee: any;
+      techCommissionInstall: any;
+      techCommissionDebug: any;
+      techCommissionMaintenance: any;
+      techCommissionAfterSales: any;
+    },
+  ) {
+    const techInstall = toNumber(product.techCommissionInstall);
+    const techDebug = toNumber(product.techCommissionDebug);
+    const techMaintenance = toNumber(product.techCommissionMaintenance);
+    const techAfterSales = toNumber(product.techCommissionAfterSales);
+
+    if (serviceType === ServiceType.INSTALL) {
+      return techInstall > 0 ? techInstall : toNumber(product.installationFee);
+    }
+    if (serviceType === ServiceType.DEBUG) {
+      if (techDebug > 0) return techDebug;
+      return toNumber(product.debuggingFee) || toNumber(product.installationFee);
+    }
+    if (serviceType === ServiceType.AFTER_SALES) {
+      return techAfterSales > 0 ? techAfterSales : toNumber(product.otherFee);
+    }
+    return 0;
   }
 
   async settle(dto: { yearMonth: string; employeeIds?: string[]; penalties?: Record<string, number> }) {
@@ -137,7 +160,17 @@ export class SalariesService {
           serviceType: true,
           quantity: true,
           difficultyFactor: true,
-          product: { select: { installationFee: true, debuggingFee: true, otherFee: true } },
+          product: {
+            select: {
+              installationFee: true,
+              debuggingFee: true,
+              otherFee: true,
+              techCommissionInstall: true,
+              techCommissionDebug: true,
+              techCommissionMaintenance: true,
+              techCommissionAfterSales: true,
+            },
+          },
         },
       });
 

@@ -65,6 +65,18 @@ export class CreateProjectDto {
   @IsEnum(ProjectStatus)
   status?: ProjectStatus;
 
+  @ApiPropertyOptional({ description: '项目服务费' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  serviceFee?: number;
+
+  @ApiPropertyOptional({ description: '签单折扣率（如0.85表示85折）' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  signDiscountRate?: number;
+
   @ApiPropertyOptional({ description: '产品清单', type: [ProjectItemInput] })
   @IsOptional()
   @IsArray()
@@ -122,6 +134,18 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsEnum(ProjectStatus)
   status?: ProjectStatus;
+
+  @ApiPropertyOptional({ description: '项目服务费' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  serviceFee?: number;
+
+  @ApiPropertyOptional({ description: '签单折扣率（如0.85表示85折）' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  signDiscountRate?: number;
 
   @ApiPropertyOptional({ description: '覆盖产品清单（全量替换）', type: [ProjectItemInput] })
   @IsOptional()

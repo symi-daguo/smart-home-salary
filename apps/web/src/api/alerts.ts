@@ -32,3 +32,8 @@ export async function resolveAlert(id: string) {
   return resp.data
 }
 
+export async function runAllAlerts() {
+  const resp = await http.post<{ stockAlerts: number; discountAlerts: number; paymentAlerts: number; total: number }>('/alerts/run-all')
+  return resp.data
+}
+

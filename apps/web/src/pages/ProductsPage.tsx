@@ -443,31 +443,6 @@ export function ProductsPage() {
               </Form.Item>
             </Col>
           </Row>
-
-          <Typography.Text strong>技术提成（可选）</Typography.Text>
-          <div style={{ height: 8 }} />
-          <Row gutter={16}>
-            <Col span={6}>
-              <Form.Item label="安装提成" name="techCommissionInstall">
-                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item label="调试提成" name="techCommissionDebug">
-                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item label="维保提成" name="techCommissionMaintenance">
-                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item label="售后提成" name="techCommissionAfterSales">
-                <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="可选" />
-              </Form.Item>
-            </Col>
-          </Row>
         </Form>
       </Modal>
 

@@ -22,6 +22,42 @@ export class ProductsService {
     });
   }
 
+  async listWithProjectPriority(projectId: string, params?: { q?: string; limit?: number }) {
+    const q = params?.q?.trim();
+    const limit = params?.limit;
+
+    const allProducts = await this.prisma.product.findMany({
+      where: this.prisma.getTenantWhere(
+        q
+          ? {
+              name: { contains: q, mode: 'insensitive' as const },
+            }
+          : undefined,
+      ),
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const projectProductIds = await this.prisma.warehouseOrderItem.findMany({
+      where: {
+        order: {
+          projectId,
+          orderType: { in: ['OUTBOUND_SALES', 'OUTBOUND_LOAN', 'OUTBOUND_AFTER_SALES'] },
+        },
+      },
+      select: { productId: true },
+    });
+
+    const priorityIds = new Set(projectProductIds.map((item) => item.productId));
+
+    const sorted = allProducts.sort((a, b) => {
+      const aPriority = priorityIds.has(a.id) ? 0 : 1;
+      const bPriority = priorityIds.has(b.id) ? 0 : 1;
+      return aPriority - bPriority;
+    });
+
+    return limit ? sorted.slice(0, limit) : sorted;
+  }
+
   async get(id: string) {
     const row = await this.prisma.product.findFirst({
       where: this.prisma.getTenantWhere({ id }),
@@ -41,6 +77,11 @@ export class ProductsService {
         otherFee: dto.otherFee ?? undefined,
         maintenanceDeposit: dto.maintenanceDeposit ?? undefined,
         isSpecialInstallation: dto.isSpecialInstallation ?? false,
+        suggestedStockQty: dto.suggestedStockQty ?? 0,
+        techCommissionInstall: dto.techCommissionInstall ?? undefined,
+        techCommissionDebug: dto.techCommissionDebug ?? undefined,
+        techCommissionMaintenance: dto.techCommissionMaintenance ?? undefined,
+        techCommissionAfterSales: dto.techCommissionAfterSales ?? undefined,
       }),
     });
   }
@@ -62,6 +103,11 @@ export class ProductsService {
         ...(dto.isSpecialInstallation !== undefined
           ? { isSpecialInstallation: dto.isSpecialInstallation }
           : {}),
+        ...(dto.suggestedStockQty !== undefined ? { suggestedStockQty: dto.suggestedStockQty } : {}),
+        ...(dto.techCommissionInstall !== undefined ? { techCommissionInstall: dto.techCommissionInstall } : {}),
+        ...(dto.techCommissionDebug !== undefined ? { techCommissionDebug: dto.techCommissionDebug } : {}),
+        ...(dto.techCommissionMaintenance !== undefined ? { techCommissionMaintenance: dto.techCommissionMaintenance } : {}),
+        ...(dto.techCommissionAfterSales !== undefined ? { techCommissionAfterSales: dto.techCommissionAfterSales } : {}),
       },
     });
   }

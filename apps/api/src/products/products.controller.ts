@@ -24,6 +24,14 @@ export class ProductsController {
     return this.products.list({ q: query.q, limit: query.limit });
   }
 
+  @Get('by-project/:projectId')
+  @RequirePermissions('products.manage', 'products.read')
+  @ApiOperation({ summary: '按项目优先排序的商品列表（关联项目出库单产品排在前面）' })
+  @ApiResponse({ status: 200 })
+  async listByProject(@Param('projectId') projectId: string, @Query() query: SearchQueryDto) {
+    return this.products.listWithProjectPriority(projectId, { q: query.q, limit: query.limit });
+  }
+
   @Get(':id')
   @RequirePermissions('products.manage', 'products.read')
   @ApiOperation({ summary: '获取商品详情' })

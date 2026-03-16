@@ -35,7 +35,7 @@ import { http } from '../api/http'
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
 
-const DEFAULT_OPEN_KEYS = ['org', 'biz', 'report', 'survey', 'finance', 'warehouse'] as const
+const DEFAULT_OPEN_KEYS = ['org', 'biz', 'report', 'survey', 'finance', 'warehouse', 'outbound-apps'] as const
 
 const NAV_ITEMS_ALL: NonNullable<MenuProps['items']> = [
   { key: '/dashboard', icon: <BarChartOutlined />, label: '工作台' },
@@ -81,10 +81,17 @@ const NAV_ITEMS_ALL: NonNullable<MenuProps['items']> = [
     icon: <ContainerOutlined />,
     label: '仓库管理',
     children: [
-      { key: '/outbound-applications', icon: <AuditOutlined />, label: '出库申请单（全部）' },
-      { key: '/outbound-applications/sales-pre', icon: <AuditOutlined />, label: '销售预出库申请' },
-      { key: '/outbound-applications/tech-pre', icon: <AuditOutlined />, label: '技术预出库申请' },
-      { key: '/outbound-applications/review', icon: <AuditOutlined />, label: '确认出库审核' },
+      {
+        key: 'outbound-apps',
+        icon: <AuditOutlined />,
+        label: '出库申请单',
+        children: [
+          { key: '/outbound-applications', icon: <AuditOutlined />, label: '全部申请' },
+          { key: '/outbound-applications/sales-pre', icon: <AuditOutlined />, label: '销售预出库申请' },
+          { key: '/outbound-applications/tech-pre', icon: <AuditOutlined />, label: '技术预出库申请' },
+          { key: '/outbound-applications/review', icon: <AuditOutlined />, label: '确认出库审核' },
+        ],
+      },
       { type: 'divider' },
       { key: '/warehouse-orders/outbound-sales', icon: <DatabaseOutlined />, label: '销售出库单' },
       { key: '/warehouse-orders/outbound-loan', icon: <DatabaseOutlined />, label: '借货出库单' },
@@ -123,7 +130,10 @@ const BREADCRUMB_MAP: Record<string, string[]> = {
   '/installation-records': ['业务上报', '技术上报'],
   '/measurement-surveys': ['测量工勘', '信息记录'],
   '/curtain-orders': ['测量工勘', '窗帘下单'],
-  '/outbound-applications': ['仓库管理', '出库申请单'],
+  '/outbound-applications': ['仓库管理', '出库申请单', '全部申请'],
+  '/outbound-applications/sales-pre': ['仓库管理', '出库申请单', '销售预出库申请'],
+  '/outbound-applications/tech-pre': ['仓库管理', '出库申请单', '技术预出库申请'],
+  '/outbound-applications/review': ['仓库管理', '出库申请单', '确认出库审核'],
   '/warehouse-orders': ['仓库管理', '出入库单'],
   '/inventory': ['仓库管理', '库存盘点'],
   '/salary': ['财务与风控', '工资结算'],

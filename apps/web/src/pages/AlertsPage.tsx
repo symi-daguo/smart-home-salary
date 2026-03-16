@@ -1,10 +1,10 @@
-import { CheckOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
+import { CheckOutlined, PlayCircleOutlined, ReloadOutlined, AlertOutlined } from '@ant-design/icons'
 import { Button, Card, Col, Grid, Row, Select, Space, Table, Tag, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
 import type { Alert, AlertSeverity } from '../api/alerts'
-import { listAlerts, resolveAlert, runAlertCompare } from '../api/alerts'
+import { listAlerts, resolveAlert, runAlertCompare, runAllAlerts } from '../api/alerts'
 import type { Project } from '../api/projects'
 import { listProjects } from '../api/projects'
 import { ALERT_SEVERITY_LABELS } from '../constants/labels'
@@ -106,6 +106,18 @@ export function AlertsPage() {
               }}
             >
               运行比对
+            </Button>
+            <Button
+              type="primary"
+              danger
+              icon={<AlertOutlined />}
+              onClick={async () => {
+                const result = await runAllAlerts()
+                message.success(`已运行所有预警检查：库存预警${result.stockAlerts}条，折扣率预警${result.discountAlerts}条，收款预警${result.paymentAlerts}条，共${result.total}条`)
+                await refresh()
+              }}
+            >
+              运行全部预警
             </Button>
           </>
         }
