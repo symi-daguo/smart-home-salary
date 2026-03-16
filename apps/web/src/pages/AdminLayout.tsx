@@ -44,6 +44,7 @@ const NAV_ITEMS_ALL: NonNullable<MenuProps['items']> = [
     icon: <BankOutlined />,
     label: '组织架构',
     children: [
+      { key: '/users', icon: <UserOutlined />, label: '用户管理' },
       { key: '/positions', icon: <IdcardOutlined />, label: '岗位管理' },
       { key: '/employee-types', icon: <TagsOutlined />, label: '员工类型' },
       { key: '/employees', icon: <TeamOutlined />, label: '员工管理' },
@@ -121,6 +122,7 @@ const NAV_ITEMS_ALL: NonNullable<MenuProps['items']> = [
 
 const BREADCRUMB_MAP: Record<string, string[]> = {
   '/dashboard': ['工作台'],
+  '/users': ['组织架构', '用户管理'],
   '/positions': ['组织架构', '岗位管理'],
   '/employee-types': ['组织架构', '员工类型'],
   '/employees': ['组织架构', '员工管理'],

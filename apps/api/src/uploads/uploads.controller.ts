@@ -73,5 +73,24 @@ export class UploadsController {
       allowedMime: /^video\/(mp4|quicktime)$/,
     });
   }
+
+  @Post('warehouse-images')
+  @RequirePermissions('uploads.create')
+  @ApiOperation({ summary: '上传出入库单图片（v1.0.8 支持出入库单图片上传）' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    }),
+  )
+  @ApiResponse({ status: 201 })
+  async uploadWarehouseImage(@UploadedFile() file: Express.Multer.File) {
+    return this.uploads.uploadSingle({
+      file,
+      kind: 'warehouse-image',
+      maxBytes: 5 * 1024 * 1024,
+      allowedMime: /^image\/(jpeg|png|webp)$/,
+    });
+  }
 }
 

@@ -24,6 +24,11 @@ export class CreateMeasurementSurveyDto {
 }
 
 export class UpdateMeasurementSurveyDto {
+  @ApiPropertyOptional({ description: '关联项目 ID' })
+  @IsOptional()
+  @IsString()
+  projectId?: string;
+
   @ApiPropertyOptional({ description: '记录时间（ISO）' })
   @IsOptional()
   @IsDateString()

@@ -9,7 +9,7 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { TenantContextService } from '../common/tenant-context/tenant-context.service';
 
-type UploadKind = 'payment-proof' | 'installation-photo' | 'generic';
+type UploadKind = 'payment-proof' | 'installation-photo' | 'warehouse-image' | 'generic';
 
 @Injectable()
 export class UploadsService {

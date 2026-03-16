@@ -19,6 +19,7 @@ import { OpenClawPage } from './pages/OpenClawPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { MeasurementSurveysPage } from './pages/MeasurementSurveysPage'
 import { CurtainOrdersPage } from './pages/CurtainOrdersPage'
+import { UsersPage } from './pages/UsersPage'
 import { InventoryPage } from './pages/InventoryPage'
 import { OutboundApplicationsPage } from './pages/OutboundApplicationsPage'
 import { WarehouseOrdersPage } from './pages/WarehouseOrdersPage'
@@ -66,6 +67,7 @@ export default function App() {
           >
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="users" element={<UsersPage />} />
             <Route path="positions" element={<PositionsPage />} />
             <Route path="employees" element={<EmployeesPage />} />
             <Route path="employee-types" element={<EmployeeTypesPage />} />

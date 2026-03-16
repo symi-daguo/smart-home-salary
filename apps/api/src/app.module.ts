@@ -36,6 +36,7 @@ import { TenantContextInterceptor } from './common/interceptors/tenant-context.i
 import { HttpMetricsInterceptor } from './metrics/interceptors/http-metrics.interceptor';
 import { HttpLoggingInterceptor } from './logger/interceptors/http-logging.interceptor';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { OpenclawModule } from './openclaw/openclaw.module';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     CurtainOrdersModule,
     WarehouseModule,
     DashboardModule,
+    OpenclawModule,
   ],
   controllers: [],
   providers: [
