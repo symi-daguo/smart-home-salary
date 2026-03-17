@@ -48,7 +48,7 @@
     "longDescription": "专为智能家居行业设计的综合管理系统，涵盖项目管理、工资计算、仓库管理、业务上报等核心功能。",
     "windows": {
       "webviewInstallMode": {
-        "type": "offlineInstaller",
+        "type": "embedBootstrapper",
         "silent": true
       },
       "wix": {

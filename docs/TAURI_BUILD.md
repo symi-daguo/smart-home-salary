@@ -36,7 +36,7 @@ bundle/
 
 ### 为什么不同平台/格式体积差异很大？
 
-- **Windows（NSIS `.exe`）**：如果离线集成 WebView2 Runtime，安装包会显著变大（例如接近 200MB），这是为了保证“安装后一定能启动”。
+- **Windows（NSIS `.exe`）**：如果离线集成 WebView2 Runtime，安装包会显著变大（例如接近 200MB）。为保证 CI 稳定构建，当前默认使用 `embedBootstrapper`（安装时引导安装 WebView2）。
 - **Linux（AppImage）**：通常会把更多依赖打包进去，体积往往是 **几十 MB**（更“开箱即用”）。
 - **Linux（`.deb` / `.rpm`）**：更像“系统包”，通常依赖系统环境提供 WebView/GTK 等组件，因此体积可能只有 **几 MB**（但对系统依赖更敏感）。
 - **macOS（`.dmg` / `.app.tar.gz`）**：资源高度压缩 + Rust `strip` 后，体积可能看起来很小；是否“正确”以**能否安装并正常启动**为准。
