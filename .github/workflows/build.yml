@@ -22,10 +22,15 @@ jobs:
         include:
           - platform: 'macos-latest'
             target: 'aarch64-apple-darwin'
+            bundleArgs: ''
           - platform: 'ubuntu-22.04'
             target: ''
+            bundleArgs: ''
           - platform: 'windows-latest'
             target: ''
+            # Windows runner 上 MSI 依赖 WiX，失败时会导致整体打包失败；
+            # 这里先只打 NSIS（exe），确保能稳定产出可交付安装包。
+            bundleArgs: '--bundles nsis'
 
     runs-on: ${{ matrix.platform }}
     
@@ -61,10 +66,11 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUST_BACKTRACE: 1
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'SmartHome v__VERSION__'
           releaseBody: 'See CHANGELOG.md for details.'
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.target != '' && format('--target {0} --verbose', matrix.target) || '--verbose' }}
+          args: ${{ matrix.target != '' && format('--target {0} {1} --verbose', matrix.target, matrix.bundleArgs) || format('{0} --verbose', matrix.bundleArgs) }}
