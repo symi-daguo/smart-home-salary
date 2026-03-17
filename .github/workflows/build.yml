@@ -6,6 +6,10 @@ on:
       - 'v*'
   workflow_dispatch:
 
+# 设置 GITHUB_TOKEN 的权限，允许创建 Release
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:

@@ -24,21 +24,21 @@ import {
 export class WarehouseService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async generateOrderNo(prefix: string): Promise<string> {
+  private async generateOrderNo(tenantId: string, prefix: string): Promise<string> {
     const today = new Date()
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '')
     const count = await this.prisma.warehouseOrder.count({
-      where: { orderNo: { startsWith: prefix + dateStr } },
+      where: { tenantId, orderNo: { startsWith: prefix + dateStr } },
     })
     const seq = (count + 1).toString().padStart(3, '0')
     return `${prefix}${dateStr}${seq}`
   }
 
-  private async generateApplicationNo(prefix: string): Promise<string> {
+  private async generateApplicationNo(tenantId: string, prefix: string): Promise<string> {
     const today = new Date()
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '')
     const count = await this.prisma.outboundApplication.count({
-      where: { orderNo: { startsWith: prefix + dateStr } },
+      where: { tenantId, orderNo: { startsWith: prefix + dateStr } },
     })
     const seq = (count + 1).toString().padStart(3, '0')
     return `${prefix}${dateStr}${seq}`
@@ -46,7 +46,7 @@ export class WarehouseService {
 
   async createOutboundApplication(tenantId: string, applicantId: string, dto: CreateOutboundApplicationDto) {
     const prefix = dto.type === OutboundApplicationType.SALES_PRE ? 'SQ' : 'TQ'
-    const orderNo = await this.generateApplicationNo(prefix)
+    const orderNo = await this.generateApplicationNo(tenantId, prefix)
 
     return this.prisma.outboundApplication.create({
       data: {
@@ -204,7 +204,7 @@ export class WarehouseService {
       INBOUND_AFTER_SALES: 'RH',
       INBOUND_UNKNOWN: 'WR',
     }
-    const orderNo = await this.generateOrderNo(prefixMap[dto.orderType] || 'CK')
+    const orderNo = await this.generateOrderNo(tenantId, prefixMap[dto.orderType] || 'CK')
 
     const result = await this.prisma.$transaction(async (tx) => {
       const order = await tx.warehouseOrder.create({
@@ -303,7 +303,7 @@ export class WarehouseService {
       INBOUND_AFTER_SALES: 'RH',
       INBOUND_UNKNOWN: 'WR',
     }
-    const orderNo = await this.generateOrderNo(prefixMap[dto.orderType] || 'CK')
+    const orderNo = await this.generateOrderNo(tenantId, prefixMap[dto.orderType] || 'CK')
 
     const result = await this.prisma.$transaction(async (tx) => {
       const order = await tx.warehouseOrder.create({

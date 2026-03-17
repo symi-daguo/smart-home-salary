@@ -23,10 +23,10 @@ export function WarehouseOrderLogsPage() {
     },
     {
       title: '操作人',
-      dataIndex: 'operatorDisplayName',
+      dataIndex: 'operatorName',
       key: 'operator',
       width: 160,
-      render: (_: string, r) => r.operatorDisplayName || r.operatorEmail || '-',
+      render: (_: string, r) => r.operatorName || r.operatorPhone || '-',
     },
     {
       title: '操作时间',

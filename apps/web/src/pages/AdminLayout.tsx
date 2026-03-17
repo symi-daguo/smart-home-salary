@@ -311,12 +311,12 @@ export function AdminLayout() {
         >
           {!collapsed && (
             <Text type="secondary" style={{ fontSize: 12 }}>
-              SYMI v1.0.5 (2026)
+              SYMI v{__APP_VERSION__} (2026)
             </Text>
           )}
           {collapsed && (
             <Text type="secondary" style={{ fontSize: 10 }}>
-              v1.0.5
+              v{__APP_VERSION__}
             </Text>
           )}
         </div>

@@ -127,8 +127,8 @@ export type WarehouseOrderLog = {
   orderNo: string
   orderType: WarehouseOrderType
   operatorId: string
-  operatorEmail?: string
-  operatorDisplayName?: string
+  operatorName?: string
+  operatorPhone?: string
   action: string
   changes: unknown
   createdAt: string
@@ -290,8 +290,9 @@ export async function listWarehouseOrderLogs(params?: {
         orderType: WarehouseOrderType
       }
       operator: {
-        email: string
-        displayName?: string | null
+        id: string
+        name: string
+        phone: string
       } | null
     }>
   >('/warehouse/logs', { params })
@@ -301,9 +302,9 @@ export async function listWarehouseOrderLogs(params?: {
     orderId: log.orderId,
     orderNo: log.order.orderNo,
     orderType: log.order.orderType,
-    operatorId: log.operator ? log.operator.email : '',
-    operatorEmail: log.operator?.email,
-    operatorDisplayName: log.operator?.displayName ?? undefined,
+    operatorId: log.operator?.id ?? '',
+    operatorName: log.operator?.name ?? undefined,
+    operatorPhone: log.operator?.phone ?? undefined,
     action: log.action,
     changes: log.changes,
     createdAt: log.createdAt,

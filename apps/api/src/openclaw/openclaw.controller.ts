@@ -1,15 +1,19 @@
 import { Controller, Post, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiSecurity } from '@nestjs/swagger';
 import { OpenclawService } from './openclaw.service';
 import { VoiceInputDto, ParsedIntentDto, FormSummaryDto } from './dto/voice-input.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
+import { TenantGuard } from '../common/guards/tenant.guard';
+import { PermissionsGuard } from '../rbac/guards/permissions.guard';
+import { RequirePermissions } from '../rbac/decorators/require-permissions.decorator';
 
 @ApiTags('OpenClaw - 语音/文字交互')
 @Controller('openclaw')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, TenantGuard, PermissionsGuard)
+@ApiBearerAuth('JWT-auth')
+@ApiSecurity('X-Tenant-ID')
 export class OpenclawController {
   constructor(private readonly openclawService: OpenclawService) {}
 
@@ -17,16 +21,8 @@ export class OpenclawController {
   @ApiOperation({ summary: '解析语音/文字输入，识别意图和实体' })
   async parseIntent(
     @Body() dto: VoiceInputDto,
-    @CurrentUser() user: any,
-    @CurrentTenant() tenant: any,
   ): Promise<ParsedIntentDto> {
-    // 添加租户上下文
-    const dtoWithContext = {
-      ...dto,
-      employeeId: user.id,
-      tenantId: tenant.id,
-    };
-    return this.openclawService.parseIntent(dtoWithContext);
+    return this.openclawService.parseIntent(dto);
   }
 
   @Post('summary')
@@ -38,26 +34,28 @@ export class OpenclawController {
     return this.openclawService.generateFormSummary(
       body.intent as any,
       body.entities,
-      user.id,
+      user?.sub,
     );
   }
 
   @Post('candidates/projects')
+  @RequirePermissions('projects.read')
   @ApiOperation({ summary: '查找候选项目' })
   async findCandidateProjects(
     @Body() body: { keyword: string },
-    @CurrentTenant() tenant: any,
+    @CurrentTenant() tenantId: string,
   ) {
-    return this.openclawService.findCandidateProjects(tenant.id, body.keyword);
+    return this.openclawService.findCandidateProjects(tenantId, body.keyword);
   }
 
   @Post('candidates/products')
+  @RequirePermissions('products.read')
   @ApiOperation({ summary: '查找候选产品' })
   async findCandidateProducts(
     @Body() body: { keyword: string },
-    @CurrentTenant() tenant: any,
+    @CurrentTenant() tenantId: string,
   ) {
-    return this.openclawService.findCandidateProducts(tenant.id, body.keyword);
+    return this.openclawService.findCandidateProducts(tenantId, body.keyword);
   }
 
   @Post('parse-amount')

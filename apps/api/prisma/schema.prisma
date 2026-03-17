@@ -70,7 +70,6 @@ model User {
   memberships        Membership[]
   auditLogs          AuditLog[]
   refreshTokens      RefreshToken[]
-  warehouseOrderLogs WarehouseOrderLog[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 }
@@ -286,6 +285,7 @@ model Employee {
   outboundApplicationsAsApplicant OutboundApplication[] @relation("ApplicationsByApplicant")
   outboundApplicationsAsReviewer  OutboundApplication[] @relation("ApplicationsByReviewer")
   warehouseOrdersAsOperator       WarehouseOrder[]      @relation("OrdersByOperator")
+  warehouseOrderLogs              WarehouseOrderLog[]   @relation("WarehouseLogsByOperator")
 
   @@unique([tenantId, phone])
   @@index([tenantId])
@@ -630,6 +630,7 @@ model Inventory {
   tenant  Tenant  @relation(fields: [tenantId], references: [id])
   product Product @relation(fields: [productId], references: [id])
 
+  @@unique([tenantId, productId])
   @@index([tenantId])
 }
 
@@ -639,7 +640,7 @@ model Inventory {
 model OutboundApplication {
   id             String                    @id @default(uuid())
   tenantId       String
-  orderNo        String                    @unique
+  orderNo        String
   type           OutboundApplicationType
   status         OutboundApplicationStatus @default(DRAFT)
   projectId      String?
@@ -658,6 +659,7 @@ model OutboundApplication {
   items          OutboundApplicationItem[]
   convertedOrder WarehouseOrder?
 
+  @@unique([tenantId, orderNo])
   @@index([tenantId])
   @@index([projectId])
   @@index([applicantId])
@@ -689,7 +691,7 @@ model OutboundApplicationItem {
 model WarehouseOrder {
   id              String             @id @default(uuid())
   tenantId        String
-  orderNo         String             @unique
+  orderNo         String
   orderType       WarehouseOrderType
   projectId       String?
   relatedOrderId  String?
@@ -711,6 +713,7 @@ model WarehouseOrder {
   items       WarehouseOrderItem[]
   logs        WarehouseOrderLog[]
 
+  @@unique([tenantId, orderNo])
   @@index([tenantId])
   @@index([projectId])
   @@index([orderType])
@@ -750,7 +753,7 @@ model WarehouseOrderLog {
 
   tenant   Tenant         @relation(fields: [tenantId], references: [id])
   order    WarehouseOrder @relation(fields: [orderId], references: [id])
-  operator User           @relation(fields: [operatorId], references: [id])
+  operator Employee       @relation("WarehouseLogsByOperator", fields: [operatorId], references: [id])
 
   @@index([tenantId])
   @@index([orderId])

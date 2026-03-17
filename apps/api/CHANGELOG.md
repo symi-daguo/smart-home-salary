@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.2] - 2026-03-17
+
+### Fixed
+- 修复 OpenClaw 接口的租户/用户上下文获取错误，补齐 `X-Tenant-ID` 安全保护
+- 修复仓库日志 `WarehouseOrderLog.operator` 口径与实际传参不一致的问题（按 Employee 记录）
+
+### Changed
+- Prisma：将单号与库存等关键唯一约束调整为租户维度（`tenantId + orderNo` 等）
+
 ## [1.1.1] - 2026-03-17
 
 ### Fixed

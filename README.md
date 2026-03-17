@@ -1,6 +1,6 @@
 # 智能家居行业SaaS管理系统
 
-[![Version](https://img.shields.io/badge/version-v1.1.1-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
+[![Version](https://img.shields.io/badge/version-v1.1.2-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml/badge.svg)](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml)
 
@@ -14,9 +14,9 @@
 
 | 平台 | 下载地址 | 说明 |
 |------|---------|------|
-| Windows | [SmartHome_1.1.0_x64.msi](https://github.com/symi-daguo/smart-home-salary/releases/latest) | Windows 10/11 |
-| macOS | [SmartHome_1.1.0_aarch64.dmg](https://github.com/symi-daguo/smart-home-salary/releases/latest) | Apple Silicon |
-| Linux | [SmartHome_1.1.0_amd64.AppImage](https://github.com/symi-daguo/smart-home-salary/releases/latest) | 通用Linux |
+| Windows | [SmartHome_1.1.2_x64.msi](https://github.com/symi-daguo/smart-home-salary/releases/latest) | Windows 10/11 |
+| macOS | [SmartHome_1.1.2_aarch64.dmg](https://github.com/symi-daguo/smart-home-salary/releases/latest) | Apple Silicon |
+| Linux | [SmartHome_1.1.2_amd64.AppImage](https://github.com/symi-daguo/smart-home-salary/releases/latest) | 通用Linux |
 
 ### 方式二：Docker部署（推荐开发者）
 
@@ -94,6 +94,15 @@ smarthome/
 | OpenClaw | `/api/openclaw` | 窗帘 | `/api/curtain-orders` |
 
 ## 📝 版本历史
+
+### v1.1.2 (2026-03-17)
+- 修复 OpenClaw 接口租户/用户上下文与权限保护
+- 修复仓库日志 operator 口径（按员工档案记录）
+- Prisma：增加租户维度唯一约束（库存、出库申请单号、出入库单号）
+- 前端：侧边栏版本号改为构建注入动态展示
+
+### v1.1.1 (2026-03-17)
+- 修复 GitHub Actions 构建失败问题
 
 ### v1.1.0 (2026-03-17)
 - 新增 GitHub Actions 自动化跨平台打包
