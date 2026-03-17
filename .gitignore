@@ -25,5 +25,8 @@ pnpm-debug.log*
 coverage/
 
 # Project docs not for GitHub (业务/需求私有资料)
-需求资料/
+# 需求资料下多数文件属于内部资料，默认忽略；
+# 但保留并版本化 `需求资料/README.md`，用于对外同步“当前项目全量说明”与代码一致性。
+需求资料/**
+!需求资料/README.md
 
