@@ -1,6 +1,6 @@
 # Tauri 桌面应用打包指南
 
-> **当前版本：v1.1.3** | **最后更新：2026-03-17**
+> **当前版本：v1.1.4** | **最后更新：2026-03-17**
 
 本文档详细说明如何打包智能家居 SaaS 管理系统的桌面应用，支持 Windows、macOS 和 Linux。
 
@@ -23,15 +23,15 @@ npm run tauri:build
 ```
 bundle/
 ├── nsis/          # Windows NSIS 安装包
-│   └── SmartHome_1.1.3_x64-setup.exe
+│   └── SmartHome_1.1.4_x64-setup.exe
 ├── macos/         # macOS App
 │   └── SmartHome.app
 ├── dmg/           # macOS DMG 安装包
-│   └── SmartHome_1.1.3_aarch64.dmg
+│   └── SmartHome_1.1.4_aarch64.dmg
 ├── deb/           # Linux DEB 包
-│   └── SmartHome_1.1.3_amd64.deb
+│   └── SmartHome_1.1.4_amd64.deb
 └── appimage/      # Linux AppImage
-    └── SmartHome_1.1.3_amd64.AppImage
+    └── SmartHome_1.1.4_amd64.AppImage
 ```
 
 ### 为什么不同平台/格式体积差异很大？
@@ -48,7 +48,7 @@ bundle/
 
 ### Windows：安装后打不开（无反应）怎么排查？
 
-从 v1.1.3 起，桌面版会将启动错误写入日志，并在启动失败时弹窗提示。
+从 v1.1.4 起，桌面版会将启动错误写入日志，并在启动失败时弹窗提示。
 
 - **日志位置**：`%APPDATA%\\com.smarthome.desktop\\logs\\smarthome.log`
 - 请将日志内容与当时的错误弹窗信息一并反馈，便于快速定位（WebView2 / 资源路径 / 权限等问题）。

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.4] - 2026-03-17
+
+### Fixed
+- Windows 桌面端：启动失败不再“无反应”，改为弹窗提示错误并将日志写入 LogDir（便于快速定位）
+
 ## [1.1.3] - 2026-03-17
 
 ### Fixed
