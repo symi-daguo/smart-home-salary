@@ -1,6 +1,6 @@
 # 智能家居行业SaaS管理系统
 
-[![Version](https://img.shields.io/badge/version-v1.1.4-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
+[![Version](https://img.shields.io/badge/version-v1.1.5-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml/badge.svg)](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml)
 
@@ -98,6 +98,11 @@ smarthome/
 | OpenClaw | `/api/openclaw` | 窗帘 | `/api/curtain-orders` |
 
 ## 📝 版本历史
+
+### v1.1.5 (2026-03-17)
+- 安全：Tauri 启用 CSP（不再使用 `csp: null`），收敛攻击面
+- 安全：移除不必要的 Shell 插件与过宽权限（不再允许任意 `execute/spawn/kill`）
+- Windows：安装后“无反应”场景增强可定位性（启动失败弹窗 + 写入日志）
 
 ### v1.1.4 (2026-03-17)
 - Windows：启动失败弹窗提示 + 写入日志文件（便于定位“安装后无反应”）
