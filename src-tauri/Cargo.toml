@@ -1,6 +1,6 @@
 [package]
 name = "smarthome"
-version = "1.1.0"
+version = "1.1.1"
 description = "智能家居行业SaaS管理系统桌面版"
 authors = ["SYMI-DA GUO"]
 license = "MIT"

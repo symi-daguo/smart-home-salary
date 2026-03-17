@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-03-17
+
+### Fixed
+- 修复 GitHub Actions 构建失败问题
+  - 使用 Node.js 22 替代已弃用的 Node.js 20
+  - 添加 FORCE_JAVASCRIPT_ACTIONS_TO_NODE24 环境变量
+  - 修复依赖安装顺序
+  - 先构建前端再执行 Tauri 打包
+
 ## [1.1.0] - 2026-03-17
 
 ### Added
