@@ -12,6 +12,5 @@ pub fn run() -> Result<(), tauri::Error> {
                 ])
                 .build(),
         )
-        .plugin(tauri_plugin_shell::init())
         .run(tauri::generate_context!())
 }

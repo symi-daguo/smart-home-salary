@@ -1,6 +1,6 @@
 [package]
 name = "smarthome"
-version = "1.1.4"
+version = "1.1.5"
 description = "智能家居行业SaaS管理系统桌面版"
 authors = ["SYMI-DA GUO"]
 license = "MIT"
@@ -21,7 +21,6 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-log = "2"
-tauri-plugin-shell = "2"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging"] }

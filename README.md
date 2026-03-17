@@ -29,6 +29,11 @@ cd smart-home-salary/infra && docker compose up -d
 - Web界面: http://localhost:5173
 - API文档: http://localhost:3000/docs
 
+### 生产环境安全提示（务必阅读）
+
+- **生产环境禁止使用默认弱密码**：请参考 `infra/.env.prod.example`，务必替换 Postgres / MinIO / JWT / OpenClaw 等所有敏感配置。
+- **首次上线建议**：关闭 Swagger（`SWAGGER_ENABLED=false`）、配置反向代理与 HTTPS、限制 OpenClaw 网关端口对公网暴露。
+
 ### 默认账号
 
 | 角色 | 邮箱 | 密码 |
@@ -93,6 +98,13 @@ smarthome/
 | OpenClaw | `/api/openclaw` | 窗帘 | `/api/curtain-orders` |
 
 ## 📝 版本历史
+
+### v1.1.5（待验证 / 不发布）
+- 安全：Tauri 启用 CSP，移除不必要的 Shell 权限（收敛攻击面）
+
+### v1.1.4 (2026-03-17)
+- Windows：启动失败弹窗提示 + 写入日志文件（便于定位“安装后无反应”）
+- 文档：客户友好化（下载统一指向 Releases latest，压缩 1.0.x 历史）
 
 ### v1.1.3 (2026-03-17)
 - Windows：NSIS 安装包离线集成 WebView2 Runtime，修复“安装后无法启动”

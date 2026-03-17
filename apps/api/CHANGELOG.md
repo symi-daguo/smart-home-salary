@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.5] - 2026-03-17
+
+### Security
+- Tauri：启用 CSP（不再使用 `csp: null`）
+- Tauri：移除不必要的 shell 插件与过宽权限（移除 `shell:allow-execute/spawn/kill`）
+
 ## [1.1.4] - 2026-03-17
 
 ### Fixed
