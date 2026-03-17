@@ -3,6 +3,43 @@
 **当前版本：v1.1.5（发布构建）**  
 **下一版本：v1.1.6（规划中）**
 
+### 发布口径（务必对齐）
+
+- **客户交付口径**：以 GitHub Releases 的安装包为准（Windows 选择 NSIS `*setup.exe`；macOS 选择 `*.dmg`；Linux 选择 `*.AppImage`）。
+- **开发验证口径**：本地 Docker Compose 必须可 `up -d --build` 且健康检查返回 `ok`，再允许打 tag 触发构建。
+- **桌面端口径（当前阶段）**：
+  - **TAURI-002（SQLite 本地持久化）**：已接入 `tauri-plugin-sql`（sqlite），预加载 `sqlite:smarthome.db`，并通过 capabilities 授权 `sql:default + sql:allow-execute`。
+  - **TAURI-001（本地后端服务集成）**：尚未完成（当前 Web 仍以 HTTP API 为主，桌面端未内置本地 API 服务/离线业务闭环）。
+
+### 关键问题修复状态（总览表）
+
+| ID | 问题描述 | 修复状态 | 验证/依据 |
+|---|---|---|---|
+| SEC-001 | CSP 设置为 null，存在 XSS 风险 | ✅ 已修复 | `src-tauri/tauri.conf.json` 已启用 CSP（不再为 null） |
+| SEC-002 | Shell 权限范围过宽 | ✅ 已修复 | 已移除 shell 插件与过宽权限（`src-tauri/capabilities/default.json` 仅保留必要权限） |
+| SEC-003 | Docker 开发环境使用默认弱密码 | ⚠️ 文档提示 | 根 `README.md` 已增加生产环境安全提示（生产需替换所有敏感配置） |
+| FUNC-001 | 仓库单据作废/冲销机制 | ✅ 已修复 | 已实现作废生成冲销单 + 库存回滚，API/前端已对接 |
+| FUNC-002 | 库存盘点单完整流程 | ✅ 已修复 | 已实现创建盘点单 → 审核 → 生成盘盈/盘亏调整单 |
+| FUNC-003 | SN 码流转追踪 | ✅ 已修复 | 已实现 `/api/warehouse/sn-trace?sn=...` 链路查询 |
+| CODE-001 | 前端生产构建未启用 sourcemap | ✅ 已修复 | `apps/web/vite.config.ts`：`sourcemap: 'hidden'` |
+| CODE-002 | 版本号同步需手动维护 | ✅ 已修复 | 根/工作区/tauri 版本已统一 `1.1.5`（含 lockfile） |
+| TAURI-001 | 桌面版未集成本地后端服务 | ❌ 未修复 | 仍为“纯 Web 前端 + HTTP API”模式 |
+| TAURI-002 | 无本地数据持久化方案 | ✅ 已修复 | 已接入 `tauri-plugin-sql`（SQLite）并预加载 DB |
+
+### 本地 Docker 验证（发布前必做）
+
+在仓库根目录执行：
+
+```bash
+cd infra
+docker compose up -d --build
+```
+
+验收：
+- Web：`http://localhost:5173`
+- Swagger：`http://localhost:3000/docs`
+- Health：`GET http://localhost:3000/api/health` 返回 `{"status":"ok", ...}`
+
 ### 项目目标
 - **业务目标**：围绕智能家居公司，自动统计安装调试费用、销售提成和月度工资，替代 Excel 人工统计。
 - **技术目标**：采用 2026 年可免费商用的现代技术栈，重点保证多租户（多公司）数据隔离、安全和可观测性，同时支持容器一键部署和后续平滑升级。
