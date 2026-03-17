@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.9] - 2026-03-17
+
+### Added
+- **Tauri桌面应用打包**
+  - 新增 `src-tauri/` 目录，完整Tauri 2.0配置
+  - macOS应用包：SmartHome.app (3.9MB)
+  - macOS安装包：SmartHome_1.0.9_aarch64.dmg (29MB)
+  - 支持Windows/Linux/macOS跨平台打包
+- **桌面版启动方案**
+  - 新增 `desktop/` 目录，包含独立部署方案
+  - SQLite数据库支持（schema.sqlite.prisma）
+  - Windows启动脚本（start.bat）
+  - Mac/Linux启动脚本（start.sh）
+  - 自动备份功能
+- **数据库迁移支持**
+  - PostgreSQL → SQLite 迁移方案
+  - SQLite环境配置文件
+
+### Changed
+- README.md 添加桌面版快速开始指南
+- package.json 添加Tauri相关脚本
+- 版本号更新至 v1.0.9
+
+### Technical Details
+- Tauri 2.10.3 + Rust 1.94.0
+- SQLite schema 将 Decimal 类型改为 Float
+- SQLite schema 将 Json 类型改为 String（Prisma自动处理序列化）
+- 前端构建产物：1,954KB (gzip: 593KB)
+
 ## [1.0.8] - 2026-03-16
 
 ### Added

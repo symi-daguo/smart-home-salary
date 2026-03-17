@@ -1,11 +1,30 @@
 # 智能家居行业SaaS管理系统
 
-[![Version](https://img.shields.io/badge/version-v1.0.8-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
+[![Version](https://img.shields.io/badge/version-v1.0.9-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > 专为智能家居行业设计的综合管理系统，涵盖项目管理、工资计算、仓库管理、业务上报等核心功能。
 
 ## 🚀 快速开始
+
+### 方式一：桌面版（推荐新手）
+
+适合客户直接安装使用，数据存储在本地，无需联网。
+
+```bash
+# 下载桌面版
+git clone https://github.com/symi-daguo/smart-home-salary.git
+cd smart-home-salary/desktop
+
+# Windows用户：双击 start.bat
+# Mac/Linux用户：运行 ./start.sh
+```
+
+详见：[桌面版说明](desktop/README.md)
+
+### 方式二：Docker部署（推荐开发者）
+
+适合团队协作、云端部署。
 
 ### 环境要求
 

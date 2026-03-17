@@ -1,0 +1,767 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./data.db"
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Tenant {
+  id                       String                    @id @default(uuid())
+  name                     String
+  slug                     String                    @unique
+  plan                     Plan                      @default(FREE)
+  status                   TenantStatus              @default(ACTIVE)
+  memberships              Membership[]
+  auditLogs                AuditLog[]
+  refreshTokens            RefreshToken[]
+  featureFlags             FeatureFlag[]
+  positions                Position[]
+  employeeTypes            EmployeeType[]
+  employees                Employee[]
+  products                 Product[]
+  productCategories        ProductCategory[]
+  projects                 Project[]
+  projectItems             ProjectItem[]
+  salesOrders              SalesOrder[]
+  salesOrderItems          SalesOrderItem[]
+  installationRecords      InstallationRecord[]
+  salaries                 Salary[]
+  alerts                   Alert[]
+  alertRules               AlertRule[]
+  measurementSurveys       MeasurementSurvey[]
+  curtainOrders            CurtainOrder[]
+  curtainRooms             CurtainRoom[]
+  curtainRoomDetails       CurtainRoomDetail[]
+  inventories              Inventory[]
+  warehouseOrders          WarehouseOrder[]
+  warehouseOrderItems      WarehouseOrderItem[]
+  outboundApplications     OutboundApplication[]
+  outboundApplicationItems OutboundApplicationItem[]
+  warehouseOrderLogs       WarehouseOrderLog[]
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+}
+
+model User {
+  id                 String              @id @default(uuid())
+  email              String              @unique
+  hashedPassword     String
+  displayName        String?
+  isEmailVerified    Boolean             @default(false)
+  memberships        Membership[]
+  auditLogs          AuditLog[]
+  refreshTokens      RefreshToken[]
+  warehouseOrderLogs WarehouseOrderLog[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model Membership {
+  id        String    @id @default(uuid())
+  role      Role      @default(MEMBER)
+  tenantId  String
+  userId    String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+  employee  Employee?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  entity    String
+  entityId  String
+  metadata  String?
+  tenantId  String
+  userId    String?
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String
+  tenantId  String?
+  userId    String
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+  revokedAt DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  key         String
+  name        String
+  description String?
+  enabled     Boolean  @default(false)
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+  metadata    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([key, tenantId])
+  @@index([tenantId])
+  @@index([key])
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ProjectStatus {
+  IN_PROGRESS
+  DONE
+  ARCHIVED
+}
+
+enum ServiceType {
+  INSTALL
+  DEBUG
+  AFTER_SALES
+}
+
+enum SalaryStatus {
+  DRAFT
+  APPROVED
+  PAID
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum WarehouseOrderType {
+  OUTBOUND_SALES
+  OUTBOUND_LOAN
+  OUTBOUND_AFTER_SALES
+  OUTBOUND_LOST
+  INBOUND_SALES
+  INBOUND_PURCHASE
+  INBOUND_AFTER_SALES
+  INBOUND_UNKNOWN
+}
+
+enum OutboundApplicationStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  CONVERTED
+}
+
+enum OutboundApplicationType {
+  SALES_PRE
+  TECH_PRE
+}
+
+enum PaymentType {
+  PAID
+  UNPAID
+  NEED_RETURN
+  RETURN_LATER
+  ON_ACCOUNT
+  GIFT
+  DESTROYED
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum AlertType {
+  SALES
+  INVENTORY
+}
+
+enum AlertCondition {
+  DISCOUNT_BELOW_THRESHOLD
+  PAYMENT_BELOW_OUTBOUND
+  STOCK_BELOW_SUGGESTED
+  PROJECT_DISCOUNT_MISMATCH
+}
+
+enum CurtainType {
+  STRAIGHT_TRACK
+  L_TRACK
+  EMBEDDED_TRACK
+  EMBEDDED_L_TRACK
+  DREAM_TRACK
+  ROLLER_BLIND
+  ARC_TRACK
+  U_TRACK
+  LIFT_BLIND
+}
+
+enum LayerType {
+  SINGLE
+  DOUBLE
+}
+
+model Position {
+  id                 String   @id @default(uuid())
+  tenantId           String
+  name               String
+  baseSalary         Float
+  commissionRule     String
+  bonusRule          String?
+  phoneAllowance     Float     @default(0)
+  transportAllowance Float     @default(0)
+  otherAllowance     Float     @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  employees Employee[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model Employee {
+  id             String           @id @default(uuid())
+  tenantId       String
+  name           String
+  phone          String
+  entryDate      DateTime
+  status         EmploymentStatus @default(ACTIVE)
+  positionId     String
+  employeeTypeId String?
+  membershipId   String?          @unique
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  position     Position      @relation(fields: [positionId], references: [id])
+  employeeType EmployeeType? @relation(fields: [employeeTypeId], references: [id])
+  membership   Membership?   @relation(fields: [membershipId], references: [id])
+
+  salesOrders                     SalesOrder[]
+  installationRecords             InstallationRecord[]
+  salaries                        Salary[]
+  outboundApplicationsAsApplicant OutboundApplication[] @relation("ApplicationsByApplicant")
+  outboundApplicationsAsReviewer  OutboundApplication[] @relation("ApplicationsByReviewer")
+  warehouseOrdersAsOperator       WarehouseOrder[]      @relation("OrdersByOperator")
+
+  @@unique([tenantId, phone])
+  @@index([tenantId])
+  @@index([positionId])
+  @@index([employeeTypeId])
+}
+
+model EmployeeType {
+  id        String   @id @default(uuid())
+  tenantId  String
+  key       String
+  name      String
+  skillTags String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  employees Employee[]
+
+  @@unique([tenantId, key])
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model Product {
+  id                        String        @id @default(uuid())
+  tenantId                  String
+  name                      String
+  category                  String
+  standardPrice             Float
+  costPrice                 Float?
+  installationFee           Float
+  debuggingFee              Float?
+  otherFee                  Float?
+  maintenanceDeposit        Float?
+  isSpecialInstallation     Boolean       @default(false)
+  status                    ProductStatus @default(ACTIVE)
+  specification             String?
+  unit                      String?       @default("个")
+  images                    String?
+  isFabric                  Boolean       @default(false)
+  suggestedStockQty         Int?          @default(0)
+  techCommissionInstall     Float?
+  techCommissionDebug       Float?
+  techCommissionMaintenance Float?
+  techCommissionAfterSales  Float?
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+
+  tenant                     Tenant                    @relation(fields: [tenantId], references: [id])
+  projectItems               ProjectItem[]
+  salesOrderItems            SalesOrderItem[]
+  installationRecords        InstallationRecord[]
+  inventory                  Inventory?
+  warehouseOrderItems        WarehouseOrderItem[]
+  applicationItems           OutboundApplicationItem[]
+  curtainRoomDetailsAsMotor  CurtainRoomDetail[]       @relation("MotorProduct")
+  curtainRoomDetailsAsFabric CurtainRoomDetail[]       @relation("FabricProduct")
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([status])
+  @@index([isFabric])
+}
+
+model ProductCategory {
+  id                         String   @id @default(uuid())
+  tenantId                   String
+  name                       String
+  recommendedInstallationFee Float
+  recommendedDebuggingFee    Float?
+  recommendedOtherFee        Float?
+  remark                     String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model Project {
+  id               String        @id @default(uuid())
+  tenantId         String
+  name             String
+  address          String
+  customerName     String
+  customerPhone    String
+  contractAmount   Float
+  signDate         DateTime
+  status           ProjectStatus @default(IN_PROGRESS)
+  serviceFee       Float?
+  signDiscountRate Float?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  tenant               Tenant                @relation(fields: [tenantId], references: [id])
+  items                ProjectItem[]
+  salesOrders          SalesOrder[]
+  installationRecords  InstallationRecord[]
+  alerts               Alert[]
+  measurementSurveys   MeasurementSurvey[]
+  curtainOrders        CurtainOrder[]
+  warehouseOrders      WarehouseOrder[]
+  outboundApplications OutboundApplication[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([status])
+}
+
+model MeasurementSurvey {
+  id         String   @id @default(uuid())
+  tenantId   String
+  projectId  String
+  occurredAt DateTime @default(now())
+  remark     String?
+  mediaUrls  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([occurredAt])
+}
+
+model CurtainOrder {
+  id                String   @id @default(uuid())
+  tenantId          String
+  projectId         String
+  roomCount         Int
+  deliveryToDoor    Boolean  @default(false)
+  deliveryAddress   String?
+  receiverName      String?
+  thirdPartyInstall Boolean  @default(false)
+  remark            String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tenant  Tenant        @relation(fields: [tenantId], references: [id])
+  project Project       @relation(fields: [projectId], references: [id])
+  rooms   CurtainRoom[]
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([createdAt])
+}
+
+model CurtainRoom {
+  id             String  @id @default(uuid())
+  tenantId       String
+  curtainOrderId String
+  roomName       String
+  detail         String
+  mediaUrls      String?
+  remark         String?
+
+  tenant  Tenant              @relation(fields: [tenantId], references: [id])
+  order   CurtainOrder        @relation(fields: [curtainOrderId], references: [id])
+  details CurtainRoomDetail[]
+
+  @@index([tenantId])
+  @@index([curtainOrderId])
+}
+
+model ProjectItem {
+  id               String   @id @default(uuid())
+  tenantId         String
+  projectId        String
+  productId        String
+  standardQuantity Int
+  standardPrice    Float
+  createdAt        DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([tenantId, projectId, productId])
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([productId])
+}
+
+model SalesOrder {
+  id               String   @id @default(uuid())
+  tenantId         String
+  projectId        String
+  employeeId       String
+  amount           Float
+  discountRate     Float
+  paymentProofUrls String?
+  remark           String?
+  verified         Boolean  @default(false)
+  occurredAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id])
+  project  Project          @relation(fields: [projectId], references: [id])
+  employee Employee         @relation(fields: [employeeId], references: [id])
+  items    SalesOrderItem[]
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([employeeId])
+  @@index([occurredAt])
+}
+
+model SalesOrderItem {
+  id            String  @id @default(uuid())
+  tenantId      String
+  salesOrderId  String
+  productId     String
+  quantity      Int
+  standardPrice Float?
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id])
+  product    Product    @relation(fields: [productId], references: [id])
+
+  @@unique([tenantId, salesOrderId, productId])
+  @@index([tenantId])
+  @@index([salesOrderId])
+  @@index([productId])
+}
+
+model InstallationRecord {
+  id               String      @id @default(uuid())
+  tenantId         String
+  projectId        String
+  employeeId       String
+  productId        String
+  serviceType      ServiceType
+  quantity         Int
+  difficultyFactor Float       @default(1.0)
+  photoUrls        String?
+  description      String?
+  occurredAt       DateTime    @default(now())
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  project  Project  @relation(fields: [projectId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([employeeId])
+  @@index([productId])
+  @@index([occurredAt])
+}
+
+model Salary {
+  id              String       @id @default(uuid())
+  tenantId        String
+  employeeId      String
+  yearMonth       String
+  baseSalary      Float
+  salesCommission Float        @default(0)
+  tierCommission  Float        @default(0)
+  technicalFee    Float        @default(0)
+  allowances      Float        @default(0)
+  penalty         Float        @default(0)
+  total           Float
+  status          SalaryStatus @default(DRAFT)
+  paidDate        DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([tenantId, employeeId, yearMonth])
+  @@index([tenantId])
+  @@index([employeeId])
+}
+
+model Alert {
+  id         String        @id @default(uuid())
+  tenantId   String
+  projectId  String?
+  alertType  AlertType?    @default(SALES)
+  severity   AlertSeverity @default(INFO)
+  title      String
+  message    String
+  metadata   String?
+  resolvedAt DateTime?
+  createdAt  DateTime      @default(now())
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([resolvedAt])
+  @@index([alertType])
+}
+
+model AlertRule {
+  id        String         @id @default(uuid())
+  tenantId  String
+  type      AlertType
+  name      String
+  condition AlertCondition
+  threshold Float?
+  enabled   Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([type])
+}
+
+model Inventory {
+  id            String   @id @default(uuid())
+  tenantId      String
+  productId     String   @unique
+  quantity      Int      @default(0)
+  lastUpdatedAt DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([tenantId])
+}
+
+model OutboundApplication {
+  id             String                    @id @default(uuid())
+  tenantId       String
+  orderNo        String                    @unique
+  type           OutboundApplicationType
+  status         OutboundApplicationStatus @default(DRAFT)
+  projectId      String?
+  applicantId    String
+  reviewerId     String?
+  reviewedAt     DateTime?
+  finalOrderType WarehouseOrderType?
+  remark         String?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  tenant         Tenant                    @relation(fields: [tenantId], references: [id])
+  project        Project?                  @relation(fields: [projectId], references: [id])
+  applicant      Employee                  @relation("ApplicationsByApplicant", fields: [applicantId], references: [id])
+  reviewer       Employee?                 @relation("ApplicationsByReviewer", fields: [reviewerId], references: [id])
+  items          OutboundApplicationItem[]
+  convertedOrder WarehouseOrder?
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([applicantId])
+  @@index([status])
+  @@index([type])
+}
+
+model OutboundApplicationItem {
+  id            String  @id @default(uuid())
+  tenantId      String
+  applicationId String
+  productId     String
+  quantity      Int
+  snCodes       String?
+  remark        String?
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id])
+  application OutboundApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  product     Product             @relation(fields: [productId], references: [id])
+
+  @@index([tenantId])
+  @@index([applicationId])
+  @@index([productId])
+}
+
+model WarehouseOrder {
+  id              String             @id @default(uuid())
+  tenantId        String
+  orderNo         String             @unique
+  orderType       WarehouseOrderType
+  projectId       String?
+  relatedOrderId  String?
+  relatedOrderIds String?
+  applicationId   String?            @unique
+  occurredAt      DateTime           @default(now())
+  paymentType     PaymentType?
+  expressNo       String?
+  images          String?
+  remark          String?
+  operatorId      String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+  project     Project?             @relation(fields: [projectId], references: [id])
+  application OutboundApplication? @relation(fields: [applicationId], references: [id])
+  operator    Employee?            @relation("OrdersByOperator", fields: [operatorId], references: [id])
+  items       WarehouseOrderItem[]
+  logs        WarehouseOrderLog[]
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@index([orderType])
+  @@index([occurredAt])
+}
+
+model WarehouseOrderItem {
+  id        String  @id @default(uuid())
+  tenantId  String
+  orderId   String
+  productId String
+  quantity  Int
+  snCodes   String?
+  unitPrice Float?
+  remark    String?
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id])
+  order   WarehouseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [productId], references: [id])
+
+  @@index([tenantId])
+  @@index([orderId])
+  @@index([productId])
+}
+
+model WarehouseOrderLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  orderId    String
+  operatorId String
+  action     String
+  changes    String
+  createdAt  DateTime @default(now())
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id])
+  order    WarehouseOrder @relation(fields: [orderId], references: [id])
+  operator User           @relation(fields: [operatorId], references: [id])
+
+  @@index([tenantId])
+  @@index([orderId])
+  @@index([createdAt])
+}
+
+model CurtainRoomDetail {
+  id       String @id @default(uuid())
+  tenantId String
+  roomId   String
+
+  roomName           String
+  curtainType        CurtainType
+  hasCurtainBox      Boolean  @default(false)
+  curtainBoxWidth    Float?
+  curtainBoxMaterial String?
+
+  leftLength   Float?
+  rightLength  Float?
+  middleLength Float?
+  lDirection   String?
+
+  installType String?
+  hasShell    Boolean?
+
+  layerType       LayerType @default(SINGLE)
+  installPosition String?
+  powerPosition   String?
+  motorProductId  String?
+
+  withFabric      Boolean  @default(false)
+  fabricHeight    Float?
+  fabricProductId String?
+
+  remark    String?
+  mediaUrls String?
+
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+  room          CurtainRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  motorProduct  Product?    @relation("MotorProduct", fields: [motorProductId], references: [id])
+  fabricProduct Product?    @relation("FabricProduct", fields: [fabricProductId], references: [id])
+
+  @@index([tenantId])
+  @@index([roomId])
+}
