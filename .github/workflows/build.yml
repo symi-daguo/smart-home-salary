@@ -62,6 +62,14 @@ jobs:
       - name: Build frontend (apps/web)
         run: npm --workspace apps/web run build
 
+      # Cargo.lock needs to include newly added Rust deps (e.g. tauri-plugin-sql).
+      # CI runners have Rust installed; generate/update lockfile to avoid --locked failures.
+      - name: Generate Cargo.lock (src-tauri)
+        shell: bash
+        run: |
+          cd src-tauri
+          cargo generate-lockfile
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
