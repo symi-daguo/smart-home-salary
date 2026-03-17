@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 2026-03-17
+
+### Fixed
+- Windows（NSIS）安装包可靠性：离线集成 WebView2 Runtime，避免用户环境导致“安装后无法启动”
+- 桌面版：Release 构建启用日志输出，便于定位启动失败/白屏等问题
+
 ## [1.1.2] - 2026-03-17
 
 ### Fixed

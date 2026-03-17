@@ -1,6 +1,6 @@
 # 智能家居行业SaaS管理系统
 
-[![Version](https://img.shields.io/badge/version-v1.1.2-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
+[![Version](https://img.shields.io/badge/version-v1.1.3-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml/badge.svg)](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml)
 
@@ -14,9 +14,9 @@
 
 | 平台 | 下载地址 | 说明 |
 |------|---------|------|
-| Windows | [SmartHome_1.1.2_x64.msi](https://github.com/symi-daguo/smart-home-salary/releases/latest) | Windows 10/11 |
-| macOS | [SmartHome_1.1.2_aarch64.dmg](https://github.com/symi-daguo/smart-home-salary/releases/latest) | Apple Silicon |
-| Linux | [SmartHome_1.1.2_amd64.AppImage](https://github.com/symi-daguo/smart-home-salary/releases/latest) | 通用Linux |
+| Windows | [SmartHome_1.1.3_x64-setup.exe](https://github.com/symi-daguo/smart-home-salary/releases/download/v1.1.3/SmartHome_1.1.3_x64-setup.exe) | Windows 10/11（NSIS 安装包，双击安装） |
+| macOS | [SmartHome_1.1.3_aarch64.dmg](https://github.com/symi-daguo/smart-home-salary/releases/download/v1.1.3/SmartHome_1.1.3_aarch64.dmg) | Apple Silicon |
+| Linux | [SmartHome_1.1.3_amd64.AppImage](https://github.com/symi-daguo/smart-home-salary/releases/download/v1.1.3/SmartHome_1.1.3_amd64.AppImage) | 通用 Linux（AppImage） |
 
 ### 方式二：Docker部署（推荐开发者）
 
@@ -63,7 +63,7 @@ smarthome/
 | 类别 | 技术 |
 |------|------|
 | 后端 | NestJS 11 + Prisma + PostgreSQL/SQLite |
-| 前端 | React 19 + TypeScript + Ant Design 5 |
+| 前端 | React 19 + TypeScript + Ant Design 6 |
 | 桌面 | Tauri 2.0 + Rust |
 | 缓存 | Redis 7 |
 | 存储 | MinIO |
@@ -94,6 +94,10 @@ smarthome/
 | OpenClaw | `/api/openclaw` | 窗帘 | `/api/curtain-orders` |
 
 ## 📝 版本历史
+
+### v1.1.3 (2026-03-17)
+- Windows：NSIS 安装包离线集成 WebView2 Runtime，修复“安装后无法启动”
+- 桌面版：Release 构建启用日志输出，便于定位启动问题
 
 ### v1.1.2 (2026-03-17)
 - 修复 OpenClaw 接口租户/用户上下文与权限保护
@@ -151,9 +155,9 @@ npm run tauri:build
 
 | 平台 | 路径 |
 |------|------|
-| Windows | `src-tauri/target/release/bundle/msi/` |
+| Windows | `src-tauri/target/release/bundle/nsis/` |
 | macOS | `src-tauri/target/release/bundle/dmg/` |
-| Linux | `src-tauri/target/release/bundle/deb/` |
+| Linux | `src-tauri/target/release/bundle/appimage/` |
 
 ---
 

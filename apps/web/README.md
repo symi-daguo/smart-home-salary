@@ -165,7 +165,7 @@ VITE_API_URL=http://localhost:3000/api
 
 # 应用配置
 VITE_APP_NAME=SYMI
-VITE_APP_VERSION=1.1.2
+VITE_APP_VERSION=1.1.3
 ```
 
 ---

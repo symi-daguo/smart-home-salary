@@ -1,6 +1,6 @@
 # Tauri 桌面应用打包指南
 
-> **当前版本：v1.1.2** | **最后更新：2026-03-17**
+> **当前版本：v1.1.3** | **最后更新：2026-03-17**
 
 本文档详细说明如何打包智能家居 SaaS 管理系统的桌面应用，支持 Windows、macOS 和 Linux。
 
@@ -22,18 +22,16 @@ npm run tauri:build
 
 ```
 bundle/
-├── msi/           # Windows MSI 安装包
-│   └── SmartHome_1.1.2_x64.msi
 ├── nsis/          # Windows NSIS 安装包
-│   └── SmartHome_1.1.2_x64-setup.exe
+│   └── SmartHome_1.1.3_x64-setup.exe
 ├── macos/         # macOS App
 │   └── SmartHome.app
 ├── dmg/           # macOS DMG 安装包
-│   └── SmartHome_1.1.2_aarch64.dmg
+│   └── SmartHome_1.1.3_aarch64.dmg
 ├── deb/           # Linux DEB 包
-│   └── smart-home_1.1.2_amd64.deb
+│   └── SmartHome_1.1.3_amd64.deb
 └── appimage/      # Linux AppImage
-    └── smart-home_1.1.2_amd64.AppImage
+    └── SmartHome_1.1.3_amd64.AppImage
 ```
 
 ---
@@ -139,15 +137,13 @@ npm run tauri:build
 
 ```
 src-tauri\target\release\bundle\
-├── msi\
-│   └── SmartHome_1.1.2_x64.msi          # 约 30MB
 └── nsis\
-    └── SmartHome_1.1.2_x64-setup.exe    # 约 25MB
+    └── SmartHome_1.1.3_x64-setup.exe    # 体积与是否离线集成 WebView2 相关
 ```
 
 ### 步骤 4: 安装测试
 
-1. 双击 `.msi` 或 `.exe` 安装包
+1. 双击 `.exe` 安装包
 2. 完成安装向导
 3. 启动应用，验证：
    - ✅ 应用正常打开
@@ -172,7 +168,7 @@ ls -lh src-tauri/target/release/bundle/
 macos/
 └── SmartHome.app (19MB)
 dmg/
-└── SmartHome_1.1.2_aarch64.dmg (2.7MB)
+└── SmartHome_1.1.3_aarch64.dmg (2.7MB)
 ```
 
 ---
@@ -215,12 +211,12 @@ jobs:
 ```bash
 # 提交所有更改
 git add .
-git commit -m "release: v1.1.2 桌面应用打包优化"
+git commit -m "release: v1.1.3 桌面应用打包优化"
 
 # 打 tag（会自动触发 GitHub Actions）
-git tag v1.1.2
+git tag v1.1.3
 git push origin main
-git push origin v1.1.2
+git push origin v1.1.3
 ```
 
 ### 4. 验证构建结果
@@ -230,7 +226,7 @@ git push origin v1.1.2
 3. 检查：
    - ✅ 所有平台构建成功（绿色对勾）
    - ✅ 生成了 GitHub Release
-   - ✅ Release 包含 6 个安装包
+   - ✅ Release 包含各平台安装包（Windows 为 NSIS `.exe`）
 
 ---
 
@@ -240,12 +236,12 @@ git push origin v1.1.2
 
 位置：`src-tauri/tauri.conf.json`
 
-**v1.1.2 关键配置:**
+**v1.1.3 关键配置:**
 
 ```json
 {
   "productName": "SmartHome",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "identifier": "com.smarthome.desktop",
   "build": {
     "frontendDist": "../apps/web/dist",
@@ -292,7 +288,7 @@ git push origin v1.1.2
 ```toml
 [package]
 name = "smarthome"
-version = "1.1.2"
+version = "1.1.3"
 edition = "2021"
 rust-version = "1.77.2"
 
@@ -333,6 +329,7 @@ strip = true
 - [ ] `language` 设置为 `"zh-CN"` 或 `"en-US"`
 - [ ] `src-tauri/icons/icon.ico` 文件存在
 - [ ] Visual Studio Build Tools 已正确安装
+- [ ] 如需生成 `.msi`：还需要安装 WiX Toolset（CI 默认仅构建 NSIS `.exe`）
 
 **验证命令:**
 ```powershell
@@ -400,7 +397,7 @@ strip = true
 
 ---
 
-## v1.1.2 版本修复内容
+## v1.1.3 版本修复内容
 
 ### 修复的问题
 
@@ -432,12 +429,12 @@ npm run tauri:build
 ✓ Frontend built in 4.01s
 ✓ Rust application built in 51.73s
 ✓ Bundled SmartHome.app (19MB)
-✓ Bundled SmartHome_1.1.2_aarch64.dmg (2.7MB)
+✓ Bundled SmartHome_1.1.3_aarch64.dmg (2.7MB)
 ```
 
 **GitHub Actions:**
 - ✅ macOS: DMG 生成成功
-- ✅ Windows: MSI + NSIS 生成成功
+- ✅ Windows: NSIS `.exe` 生成成功（离线集成 WebView2 Runtime）
 - ✅ Linux: DEB + AppImage 生成成功
 
 ---
@@ -446,6 +443,7 @@ npm run tauri:build
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| 1.1.3 | 2026-03-17 | 修复 Windows 安装后无法启动（离线集成 WebView2），Release 启用日志 |
 | 1.1.2 | 2026-03-17 | 修复 GitHub Actions 权限、Windows 打包配置、Rust 警告 |
 | 1.1.1 | 2026-03-17 | GitHub Actions 构建修复 |
 | 1.1.0 | 2026-03-17 | GitHub Actions 自动化打包 |

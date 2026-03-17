@@ -71,6 +71,6 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'SmartHome v__VERSION__'
           releaseBody: 'See CHANGELOG.md for details.'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.target != '' && format('--target {0} {1} --verbose', matrix.target, matrix.bundleArgs) || format('{0} --verbose', matrix.bundleArgs) }}
