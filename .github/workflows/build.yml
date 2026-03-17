@@ -62,7 +62,33 @@ jobs:
       - name: Build frontend (apps/web)
         run: npm --workspace apps/web run build
 
+      # 为了在 CI 失败时也能定位具体错误信息，这里先捕获完整构建日志并上传为 artifact。
+      # （GitHub Web UI 的 job logs 在未登录时不可见，且 logs.zip API 需要鉴权）
+      - name: Build Tauri app (capture log)
+        id: tauri_build
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          echo "Running: npm run tauri build -- ${{ matrix.target != '' && format('--target {0}', matrix.target) || '' }} ${{ matrix.bundleArgs }} --verbose"
+          npm run tauri build -- ${{ matrix.target != '' && format('--target {0}', matrix.target) || '' }} ${{ matrix.bundleArgs }} --verbose 2>&1 | tee tauri-build.log
+
+      - name: Upload tauri build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-build-log-${{ matrix.platform }}
+          path: tauri-build.log
+
+      - name: Fail if tauri build failed
+        if: steps.tauri_build.outcome != 'success'
+        shell: bash
+        run: |
+          echo "Tauri build failed; see artifact tauri-build.log"
+          exit 1
+
       - name: Build Tauri app
+        if: false
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
