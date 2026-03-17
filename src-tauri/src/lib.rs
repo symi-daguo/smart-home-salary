@@ -2,13 +2,14 @@
 pub fn run() -> Result<(), tauri::Error> {
     tauri::Builder::default()
         .plugin(
-            tauri_plugin_log::Builder::default()
+            tauri_plugin_log::Builder::new()
                 .level(log::LevelFilter::Info)
                 .targets([
-                    tauri_plugin_log::LogTarget::LogDir,
-                    tauri_plugin_log::LogTarget::Webview,
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some("smarthome".to_string()),
+                    }),
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Webview),
                 ])
-                .file_name("smarthome.log")
                 .build(),
         )
         .plugin(tauri_plugin_shell::init())

@@ -16,6 +16,7 @@ fn show_startup_error(details: &str) {
     let message = format!(
         "应用启动失败，请将下述错误信息与日志一起反馈。\n\n错误：\n{details}\n\n日志位置（Windows）：\n%APPDATA%\\\\com.smarthome.desktop\\\\logs\\\\smarthome.log"
     );
+    let message = message.replace("%APPDATA%", "%LOCALAPPDATA%");
 
     let title_w: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
     let msg_w: Vec<u16> = message.encode_utf16().chain(std::iter::once(0)).collect();
