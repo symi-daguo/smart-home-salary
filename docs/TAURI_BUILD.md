@@ -34,6 +34,25 @@ bundle/
     └── SmartHome_1.1.3_amd64.AppImage
 ```
 
+### 为什么不同平台/格式体积差异很大？
+
+- **Windows（NSIS `.exe`）**：如果离线集成 WebView2 Runtime，安装包会显著变大（例如接近 200MB），这是为了保证“安装后一定能启动”。
+- **Linux（AppImage）**：通常会把更多依赖打包进去，体积往往是 **几十 MB**（更“开箱即用”）。
+- **Linux（`.deb` / `.rpm`）**：更像“系统包”，通常依赖系统环境提供 WebView/GTK 等组件，因此体积可能只有 **几 MB**（但对系统依赖更敏感）。
+- **macOS（`.dmg` / `.app.tar.gz`）**：资源高度压缩 + Rust `strip` 后，体积可能看起来很小；是否“正确”以**能否安装并正常启动**为准。
+
+**推荐交付给普通用户：**
+- Windows：`*x64-setup.exe`
+- macOS：`*.dmg`
+- Linux：`*.AppImage`
+
+### Windows：安装后打不开（无反应）怎么排查？
+
+从 v1.1.3 起，桌面版会将启动错误写入日志，并在启动失败时弹窗提示。
+
+- **日志位置**：`%APPDATA%\\com.smarthome.desktop\\logs\\smarthome.log`
+- 请将日志内容与当时的错误弹窗信息一并反馈，便于快速定位（WebView2 / 资源路径 / 权限等问题）。
+
 ---
 
 ## 系统要求

@@ -14,9 +14,9 @@
 
 | 平台 | 下载地址 | 说明 |
 |------|---------|------|
-| Windows | [SmartHome_1.1.3_x64-setup.exe](https://github.com/symi-daguo/smart-home-salary/releases/download/v1.1.3/SmartHome_1.1.3_x64-setup.exe) | Windows 10/11（NSIS 安装包，双击安装） |
-| macOS | [SmartHome_1.1.3_aarch64.dmg](https://github.com/symi-daguo/smart-home-salary/releases/download/v1.1.3/SmartHome_1.1.3_aarch64.dmg) | Apple Silicon |
-| Linux | [SmartHome_1.1.3_amd64.AppImage](https://github.com/symi-daguo/smart-home-salary/releases/download/v1.1.3/SmartHome_1.1.3_amd64.AppImage) | 通用 Linux（AppImage） |
+| Windows | [GitHub Releases（选择 `*x64-setup.exe`）](https://github.com/symi-daguo/smart-home-salary/releases/latest) | Windows 10/11（推荐：NSIS `.exe`，双击安装） |
+| macOS | [GitHub Releases（选择 `*.dmg`）](https://github.com/symi-daguo/smart-home-salary/releases/latest) | Apple Silicon |
+| Linux | [GitHub Releases（选择 `*.AppImage`）](https://github.com/symi-daguo/smart-home-salary/releases/latest) | 通用 Linux（推荐：AppImage，最省心） |
 
 ### 方式二：Docker部署（推荐开发者）
 
@@ -52,7 +52,6 @@ smarthome/
 ├── src-tauri/                  # Tauri 桌面应用
 │   ├── src/                    # Rust 源码
 │   └── tauri.conf.json         # Tauri 配置
-├── desktop/                    # 桌面版部署方案
 ├── infra/                      # Docker 部署配置
 └── docs/                       # 文档
     └── TAURI_BUILD.md          # 打包指南
@@ -113,24 +112,10 @@ smarthome/
 - 优化 README.md 文档结构
 - 完善 Windows/macOS/Linux 安装包
 
-### v1.0.9 (2026-03-17)
-- 新增 Tauri 2.0 桌面应用打包支持
-- 新增 SQLite 数据库支持（桌面版）
-- 新增 Windows/Mac 启动脚本
-
-### v1.0.8 (2026-03-16)
-- 新增 OpenClaw 语音/文字交互 API
-- 新增窗帘下单自动计算功能
-- 新增用户管理功能
-
-### v1.0.7 (2026-03-16)
-- 新增产品技术提成字段
-- 新增预警中心规则引擎
-
-### v1.0.4 - v1.0.6 (2026-03)
-- 新增仓库管理模块
-- 新增出入库修改日志
-- Docker 环境优化
+### v1.0.0 - v1.0.9（阶段汇总）
+- 完成核心业务能力：组织架构、项目、业务上报、工资、仓库、预警、看板等模块
+- 引入多租户与权限体系（租户隔离、RBAC）、审计日志与基础运维能力
+- 桌面端：引入 Tauri 打包与本地数据存储（SQLite），完善跨平台发布链路
 
 [查看完整版本历史](apps/api/CHANGELOG.md)
 

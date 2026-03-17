@@ -23,6 +23,9 @@ tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-log = "2"
 tauri-plugin-shell = "2"
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging"] }
+
 [profile.release]
 opt-level = "z"
 lto = "fat"
