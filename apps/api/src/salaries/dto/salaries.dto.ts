@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SalaryStatus } from '@prisma/client';
-import { IsArray, IsEnum, IsInt, IsObject, IsOptional, IsString, Matches, Min } from 'class-validator';
+import { IsArray, IsEnum, IsNumber, IsObject, IsOptional, IsString, Matches, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class SettleSalariesDto {
   @ApiProperty({ description: '结算月份，格式 YYYY-MM，例如 2026-03' })
@@ -50,5 +51,42 @@ export class UpdateSalaryStatusDto {
   @IsOptional()
   @IsString()
   paidDate?: string;
+}
+
+export class UpdateSalaryDto {
+  @ApiPropertyOptional({ description: '底薪' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  baseSalary?: number;
+
+  @ApiPropertyOptional({ description: '销售提成' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  salesCommission?: number;
+
+  @ApiPropertyOptional({ description: '技术费' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  technicalFee?: number;
+
+  @ApiPropertyOptional({ description: '补贴' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  allowances?: number;
+
+  @ApiPropertyOptional({ description: '扣款' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  penalty?: number;
 }
 

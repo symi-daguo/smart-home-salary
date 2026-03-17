@@ -1,6 +1,6 @@
 # 智能家居行业SaaS管理系统
 
-[![Version](https://img.shields.io/badge/version-v1.1.5-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
+[![Version](https://img.shields.io/badge/version-v1.1.6-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml/badge.svg)](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml)
 
@@ -98,6 +98,13 @@ smarthome/
 | OpenClaw | `/api/openclaw` | 窗帘 | `/api/curtain-orders` |
 
 ## 📝 版本历史
+
+### v1.1.6 (2026-03-17)
+- 工资结算：支持手动修正工资数据（底薪、提成、技术费、补贴、扣款）
+- 工资结算：新增按员工筛选功能，可选择查看特定员工的工资记录
+- 工资结算：新增导出Excel功能，支持按筛选条件导出工资单
+- 数据备份：备份功能健全，包含Postgres pg_dump和MinIO bucket镜像
+- 数据备份：支持定时备份和自动清理旧备份，恢复脚本完整
 
 ### v1.1.5 (2026-03-17)
 - 安全：Tauri 启用 CSP（不再使用 `csp: null`），收敛攻击面

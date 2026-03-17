@@ -738,5 +738,31 @@ export class ExcelService {
 
     return { created };
   }
+
+  async exportSalaries(params?: { yearMonth?: string; employeeId?: string; status?: any }) {
+    const rows = await this.prisma.salary.findMany({
+      where: this.prisma.getTenantWhere({
+        ...(params?.yearMonth ? { yearMonth: params.yearMonth } : {}),
+        ...(params?.employeeId ? { employeeId: params.employeeId } : {}),
+        ...(params?.status ? { status: params.status } : {}),
+      }),
+      include: { employee: { include: { position: true } } },
+      orderBy: [{ yearMonth: 'desc' }, { createdAt: 'desc' }],
+    });
+    const data = rows.map((s) => ({
+      月份: s.yearMonth,
+      员工姓名: s.employee?.name ?? '',
+      岗位: s.employee?.position?.name ?? '',
+      底薪: s.baseSalary.toString(),
+      销售提成: s.salesCommission.toString(),
+      技术费: s.technicalFee.toString(),
+      补贴: s.allowances.toString(),
+      扣款: s.penalty.toString(),
+      总额: s.total.toString(),
+      状态: s.status === 'PAID' ? '已发放' : s.status === 'APPROVED' ? '已审批' : '草稿',
+      发放日期: s.paidDate ? s.paidDate.toISOString().slice(0, 10) : '',
+    }));
+    return makeXlsxBuffer({ salaries: data });
+  }
 }
 

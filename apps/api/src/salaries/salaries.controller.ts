@@ -16,7 +16,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { TenantGuard } from '../common/guards/tenant.guard';
 import { RequirePermissions } from '../rbac/decorators/require-permissions.decorator';
 import { PermissionsGuard } from '../rbac/guards/permissions.guard';
-import { ListSalariesDto, SettleSalariesDto, UpdateSalaryStatusDto } from './dto/salaries.dto';
+import { ListSalariesDto, SettleSalariesDto, UpdateSalaryDto, UpdateSalaryStatusDto } from './dto/salaries.dto';
 import { SalariesService } from './salaries.service';
 import { PrismaService } from '../common/prisma.service';
 import type { Request } from 'express';
@@ -94,6 +94,13 @@ export class SalariesController {
   @ApiOperation({ summary: '更新工资单状态（APPROVED/PAID）' })
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateSalaryStatusDto) {
     return this.salaries.updateStatus(id, dto);
+  }
+
+  @Patch(':id')
+  @RequirePermissions('salary.manage')
+  @ApiOperation({ summary: '手动修正工资单数据' })
+  async update(@Param('id') id: string, @Body() dto: UpdateSalaryDto) {
+    return this.salaries.update(id, dto);
   }
 }
 

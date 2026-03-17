@@ -39,3 +39,18 @@ export async function updateSalaryStatus(id: string, status: SalaryStatus) {
   return resp.data
 }
 
+export async function updateSalary(id: string, data: { baseSalary?: number; salesCommission?: number; technicalFee?: number; allowances?: number; penalty?: number }) {
+  const resp = await http.patch<Salary>(`/salaries/${id}`, data)
+  return resp.data
+}
+
+export async function exportSalaries(params?: { yearMonth?: string; employeeId?: string; status?: SalaryStatus }) {
+  const qs = new URLSearchParams()
+  if (params?.yearMonth) qs.set('yearMonth', params.yearMonth)
+  if (params?.employeeId) qs.set('employeeId', params.employeeId)
+  if (params?.status) qs.set('status', params.status)
+  const url = `/excel/salaries/export${qs.toString() ? `?${qs.toString()}` : ''}`
+  const resp = await http.get<Blob>(url, { responseType: 'blob' })
+  return resp.data
+}
+

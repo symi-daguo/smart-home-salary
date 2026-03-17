@@ -271,5 +271,28 @@ export class SalariesService {
       },
     });
   }
+
+  async update(id: string, dto: { baseSalary?: number; salesCommission?: number; technicalFee?: number; allowances?: number; penalty?: number }) {
+    const salary = await this.get(id);
+    const data: any = {};
+    if (dto.baseSalary !== undefined) data.baseSalary = dto.baseSalary;
+    if (dto.salesCommission !== undefined) data.salesCommission = dto.salesCommission;
+    if (dto.technicalFee !== undefined) data.technicalFee = dto.technicalFee;
+    if (dto.allowances !== undefined) data.allowances = dto.allowances;
+    if (dto.penalty !== undefined) data.penalty = dto.penalty;
+    if (Object.keys(data).length > 0) {
+      const base = data.baseSalary ?? salary.baseSalary;
+      const sales = data.salesCommission ?? salary.salesCommission;
+      const tech = data.technicalFee ?? salary.technicalFee;
+      const allow = data.allowances ?? salary.allowances;
+      const pen = data.penalty ?? salary.penalty;
+      data.total = round2(toNumber(base) + toNumber(sales) + toNumber(tech) + toNumber(allow) - toNumber(pen));
+    }
+    return this.prisma.salary.update({
+      where: { id },
+      data,
+      include: { employee: { include: { position: true } } },
+    });
+  }
 }
 

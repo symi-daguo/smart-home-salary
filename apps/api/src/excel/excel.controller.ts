@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Post, Res, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query, Res, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
@@ -219,6 +219,14 @@ export class ExcelController {
   @ApiResponse({ status: 201 })
   async importSalesOrdersJson(@Body() rows: any[]) {
     return this.excel.importSalesOrdersJson(rows);
+  }
+
+  @Get('salaries/export')
+  @RequirePermissions('salary.manage')
+  @ApiOperation({ summary: '导出工资单 Excel' })
+  async exportSalaries(@Res() res: Response, @Query() query: { yearMonth?: string; employeeId?: string; status?: string }) {
+    const buf = await this.excel.exportSalaries(query);
+    return this.sendXlsx(res, `salaries-${new Date().toISOString().slice(0, 10)}.xlsx`, buf);
   }
 }
 

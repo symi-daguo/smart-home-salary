@@ -1,10 +1,11 @@
-import { CheckOutlined, DollarOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Grid, Row, DatePicker, Select, Space, Table, Tag, message } from 'antd'
+import { CheckOutlined, DollarOutlined, EditOutlined, ExportOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Button, Card, Col, Grid, Row, DatePicker, Select, Space, Table, Tag, message, Modal, Form, InputNumber } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
 import type { Salary, SalaryStatus } from '../api/salaries'
-import { listSalaries, settleSalaries, updateSalaryStatus } from '../api/salaries'
+import { listSalaries, settleSalaries, updateSalaryStatus, updateSalary, exportSalaries } from '../api/salaries'
+import { listEmployees, type Employee } from '../api/employees'
 import { PageHeader } from '../components/PageHeader'
 
 function statusTag(s: SalaryStatus) {
@@ -16,23 +17,79 @@ function statusTag(s: SalaryStatus) {
 export function SalariesPage() {
   const screens = Grid.useBreakpoint()
   const [rows, setRows] = useState<Salary[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(false)
   const [yearMonth, setYearMonth] = useState<string>(dayjs().format('YYYY-MM'))
   const [status, setStatus] = useState<SalaryStatus | undefined>(undefined)
+  const [employeeId, setEmployeeId] = useState<string | undefined>(undefined)
+  const [editModalVisible, setEditModalVisible] = useState(false)
+  const [editingSalary, setEditingSalary] = useState<Salary | null>(null)
+  const [form] = Form.useForm()
 
   async function refresh() {
     setLoading(true)
     try {
-      setRows(await listSalaries({ yearMonth, status }))
+      setRows(await listSalaries({ yearMonth, employeeId, status }))
     } finally {
       setLoading(false)
     }
   }
 
+  async function loadEmployees() {
+    try {
+      setEmployees(await listEmployees())
+    } catch (e) {
+      console.error('加载员工列表失败:', e)
+    }
+  }
+
   useEffect(() => {
     refresh().catch((e) => message.error(e?.message ?? '加载失败'))
+    loadEmployees()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const handleEdit = (record: Salary) => {
+    setEditingSalary(record)
+    form.setFieldsValue({
+      baseSalary: Number(record.baseSalary),
+      salesCommission: Number(record.salesCommission),
+      technicalFee: Number(record.technicalFee),
+      allowances: Number(record.allowances),
+      penalty: Number(record.penalty),
+    })
+    setEditModalVisible(true)
+  }
+
+  const handleEditSubmit = async () => {
+    if (!editingSalary) return
+    try {
+      const values = await form.validateFields()
+      await updateSalary(editingSalary.id, values)
+      message.success('工资单已更新')
+      setEditModalVisible(false)
+      await refresh()
+    } catch (e) {
+      message.error('更新失败')
+    }
+  }
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportSalaries({ yearMonth, employeeId, status })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `salaries-${new Date().toISOString().slice(0, 10)}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      message.success('导出成功')
+    } catch (e) {
+      message.error('导出失败')
+    }
+  }
 
   const columns: ColumnsType<Salary> = useMemo(
     () => [
@@ -51,6 +108,13 @@ export function SalariesPage() {
         key: 'actions',
         render: (_, r) => (
           <Space>
+            <Button
+              icon={<EditOutlined />}
+              disabled={r.status === 'PAID'}
+              onClick={() => handleEdit(r)}
+            >
+              编辑
+            </Button>
             <Button
               icon={<CheckOutlined />}
               disabled={r.status !== 'DRAFT'}
@@ -87,6 +151,9 @@ export function SalariesPage() {
         subtitle="按月结算生成工资单，并支持审批/发放标记。"
         extra={
           <>
+            <Button icon={<ExportOutlined />} onClick={handleExport}>
+              导出
+            </Button>
             <Button icon={<ReloadOutlined />} onClick={() => refresh()} loading={loading}>
               刷新
             </Button>
@@ -108,7 +175,7 @@ export function SalariesPage() {
       <div style={{ height: 12 }} />
 
       <Row gutter={[12, 12]} align="middle">
-        <Col xs={24} sm={12} md={8} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <DatePicker
             style={{ width: '100%' }}
             picker="month"
@@ -116,7 +183,19 @@ export function SalariesPage() {
             onChange={(d) => setYearMonth((d ? d.format('YYYY-MM') : dayjs().format('YYYY-MM')))}
           />
         </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
+          <Select
+            style={{ width: '100%' }}
+            value={employeeId ?? ''}
+            placeholder="选择员工"
+            options={[
+              { value: '', label: '全部员工' },
+              ...employees.map((e) => ({ value: e.id, label: e.name })),
+            ]}
+            onChange={(v) => setEmployeeId(v ? String(v) : undefined)}
+          />
+        </Col>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <Select
             style={{ width: '100%' }}
             value={status ?? ''}
@@ -129,7 +208,7 @@ export function SalariesPage() {
             onChange={(v) => setStatus((v || undefined) as any)}
           />
         </Col>
-        <Col xs={24} sm={24} md={8} lg={6}>
+        <Col xs={24} sm={24} md={6} lg={6}>
           <Button style={{ width: screens.md ? undefined : '100%' }} onClick={() => refresh()}>
             应用过滤
           </Button>
@@ -146,7 +225,41 @@ export function SalariesPage() {
         pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50] }}
         scroll={{ x: 'max-content' }}
       />
+
+      <Modal
+        title="编辑工资单"
+        open={editModalVisible}
+        onOk={handleEditSubmit}
+        onCancel={() => setEditModalVisible(false)}
+        okText="保存"
+        cancelText="取消"
+      >
+        {editingSalary && (
+          <Form form={form} layout="vertical">
+            <Form.Item label="员工" name="employee">
+              <span>{editingSalary.employee?.name ?? editingSalary.employeeId}</span>
+            </Form.Item>
+            <Form.Item label="月份" name="yearMonth">
+              <span>{editingSalary.yearMonth}</span>
+            </Form.Item>
+            <Form.Item label="底薪" name="baseSalary">
+              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+            </Form.Item>
+            <Form.Item label="销售提成" name="salesCommission">
+              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+            </Form.Item>
+            <Form.Item label="技术费" name="technicalFee">
+              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+            </Form.Item>
+            <Form.Item label="补贴" name="allowances">
+              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+            </Form.Item>
+            <Form.Item label="扣款" name="penalty">
+              <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+            </Form.Item>
+          </Form>
+        )}
+      </Modal>
     </Card>
   )
 }
-
