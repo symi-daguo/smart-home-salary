@@ -57,6 +57,9 @@ model Tenant {
   outboundApplications     OutboundApplication[]
   outboundApplicationItems OutboundApplicationItem[]
   warehouseOrderLogs       WarehouseOrderLog[]
+  inventoryChecks          InventoryCheck[]
+  inventoryCheckItems      InventoryCheckItem[]
+  inventoryCheckOrders     InventoryCheckOrder[]
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
 }
@@ -296,6 +299,7 @@ model Employee {
   outboundApplicationsAsReviewer  OutboundApplication[] @relation("ApplicationsByReviewer")
   warehouseOrdersAsOperator       WarehouseOrder[]      @relation("OrdersByOperator")
   warehouseOrderLogs              WarehouseOrderLog[]   @relation("WarehouseLogsByOperator")
+  approvedInventoryChecks         InventoryCheck[]
 
   @@unique([tenantId, phone])
   @@index([tenantId])
@@ -354,6 +358,7 @@ model Product {
   applicationItems           OutboundApplicationItem[]
   curtainRoomDetailsAsMotor  CurtainRoomDetail[]       @relation("MotorProduct")
   curtainRoomDetailsAsFabric CurtainRoomDetail[]       @relation("FabricProduct")
+  inventoryCheckItems        InventoryCheckItem[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -729,6 +734,7 @@ model WarehouseOrder {
   operator    Employee?            @relation("OrdersByOperator", fields: [operatorId], references: [id])
   items       WarehouseOrderItem[]
   logs        WarehouseOrderLog[]
+  inventoryCheckOrders InventoryCheckOrder[]
 
   @@unique([tenantId, orderNo])
   @@index([tenantId])

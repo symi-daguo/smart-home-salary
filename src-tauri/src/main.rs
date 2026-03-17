@@ -10,7 +10,7 @@ fn main() {
 
 #[cfg(windows)]
 fn show_startup_error(details: &str) {
-    use windows_sys::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK, HWND};
 
     let title = "SmartHome 启动失败";
     let message = format!(
@@ -22,6 +22,6 @@ fn show_startup_error(details: &str) {
     let msg_w: Vec<u16> = message.encode_utf16().chain(std::iter::once(0)).collect();
 
     unsafe {
-        MessageBoxW(0, msg_w.as_ptr(), title_w.as_ptr(), MB_OK | MB_ICONERROR);
+        MessageBoxW(HWND(0), msg_w.as_ptr(), title_w.as_ptr(), MB_OK | MB_ICONERROR);
     }
 }

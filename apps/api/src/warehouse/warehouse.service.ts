@@ -756,13 +756,13 @@ export class WarehouseService {
 
     const [applications, orders] = await Promise.all([
       this.prisma.outboundApplication.findMany({
-        where: { tenantId, items: { some: { snCodes: { has: sn } } } },
+        where: { tenantId, items: { some: { snCodes: { array_contains: [sn] } } } },
         include: { project: true, applicant: true, reviewer: true, items: { include: { product: true } }, convertedOrder: true },
         orderBy: { createdAt: 'desc' },
         take: 50,
       }),
       this.prisma.warehouseOrder.findMany({
-        where: { tenantId, items: { some: { snCodes: { has: sn } } } },
+        where: { tenantId, items: { some: { snCodes: { array_contains: [sn] } } } },
         include: { project: true, operator: true, items: { include: { product: true } } },
         orderBy: { occurredAt: 'desc' },
         take: 100,
