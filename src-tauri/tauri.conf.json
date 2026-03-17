@@ -61,5 +61,9 @@
       }
     }
   },
-  "plugins": {}
+  "plugins": {
+    "sql": {
+      "preload": ["sqlite:smarthome.db"]
+    }
+  }
 }

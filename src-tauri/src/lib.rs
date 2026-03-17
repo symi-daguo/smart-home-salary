@@ -12,5 +12,6 @@ pub fn run() -> Result<(), tauri::Error> {
                 ])
                 .build(),
         )
+        .plugin(tauri_plugin_sql::Builder::default().build())
         .run(tauri::generate_context!())
 }
