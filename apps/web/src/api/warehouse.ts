@@ -79,10 +79,14 @@ export type WarehouseOrder = {
   id: string
   orderNo: string
   orderType: WarehouseOrderType
+  status?: 'POSTED' | 'VOIDED'
   projectId?: string
   project?: { id: string; name: string }
   relatedOrderId?: string
   applicationId?: string
+  reversalOrderId?: string
+  voidReason?: string
+  voidedAt?: string
   occurredAt: string
   paymentType?: PaymentType
   expressNo?: string
@@ -93,6 +97,27 @@ export type WarehouseOrder = {
   items: WarehouseOrderItem[]
   createdAt: string
   updatedAt: string
+}
+
+export type InventoryCheckItem = {
+  id: string
+  productId: string
+  product?: { id: string; name: string; category: string }
+  systemQty: number
+  countedQty: number
+  diffQty: number
+  remark?: string
+}
+
+export type InventoryCheck = {
+  id: string
+  status: 'DRAFT' | 'APPROVED'
+  remark?: string
+  createdAt: string
+  updatedAt: string
+  approvedAt?: string
+  approverId?: string
+  items: InventoryCheckItem[]
 }
 
 export type Inventory = {
@@ -256,6 +281,11 @@ export async function deleteWarehouseOrder(id: string, operatorId: string) {
   return res.data
 }
 
+export async function voidWarehouseOrder(id: string, operatorId: string, reason: string) {
+  const res = await http.post<WarehouseOrder>(`/warehouse/orders/${id}/void`, { operatorId, reason })
+  return res.data
+}
+
 export async function listInventory() {
   const res = await http.get<Inventory[]>('/warehouse/inventory')
   return res.data
@@ -268,6 +298,40 @@ export async function getInventoryCost() {
 
 export async function adjustInventory(productId: string, quantity: number, remark?: string) {
   const res = await http.post<Inventory>('/warehouse/inventory/adjust', { productId, quantity, remark })
+  return res.data
+}
+
+export async function createInventoryCheck(data: {
+  remark?: string
+  items: Array<{ productId: string; systemQty: number; countedQty: number; remark?: string }>
+}) {
+  const res = await http.post<InventoryCheck>('/warehouse/inventory-checks', data)
+  return res.data
+}
+
+export async function listInventoryChecks() {
+  const res = await http.get<InventoryCheck[]>('/warehouse/inventory-checks')
+  return res.data
+}
+
+export async function getInventoryCheck(id: string) {
+  const res = await http.get<InventoryCheck>(`/warehouse/inventory-checks/${id}`)
+  return res.data
+}
+
+export async function approveInventoryCheck(id: string, approverId: string, remark?: string) {
+  const res = await http.post<{ success: boolean; orders: WarehouseOrder[] }>(
+    `/warehouse/inventory-checks/${id}/approve`,
+    { approverId, remark },
+  )
+  return res.data
+}
+
+export async function traceSn(sn: string) {
+  const res = await http.get<{ sn: string; applications: OutboundApplication[]; orders: WarehouseOrder[] }>(
+    '/warehouse/sn-trace',
+    { params: { sn } },
+  )
   return res.data
 }
 

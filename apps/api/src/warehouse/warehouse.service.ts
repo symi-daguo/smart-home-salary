@@ -19,6 +19,7 @@ import {
   QueryWarehouseOrderDto,
   QueryWarehouseOrderLogDto,
 } from './dto/warehouse-order.dto'
+import { ApproveInventoryCheckDto, CreateInventoryCheckDto } from './dto/inventory-check.dto'
 
 @Injectable()
 export class WarehouseService {
@@ -472,6 +473,10 @@ export class WarehouseService {
   async deleteWarehouseOrder(tenantId: string, operatorId: string, id: string) {
     const order = await this.getWarehouseOrder(tenantId, id)
 
+    if ((order as any).status === 'VOIDED') {
+      throw new BadRequestException('已作废单据不可删除')
+    }
+
     await this.prisma.$transaction(async (tx) => {
       await tx.warehouseOrderLog.create({
         data: {
@@ -488,6 +493,283 @@ export class WarehouseService {
     })
 
     return { success: true }
+  }
+
+  private isInboundOrderType(orderType: string) {
+    return (
+      orderType === 'INBOUND_SALES' ||
+      orderType === 'INBOUND_PURCHASE' ||
+      orderType === 'INBOUND_AFTER_SALES' ||
+      orderType === 'INBOUND_UNKNOWN'
+    )
+  }
+
+  async voidWarehouseOrder(tenantId: string, operatorId: string, id: string, reason: string) {
+    const order = await this.getWarehouseOrder(tenantId, id)
+    if ((order as any).status === 'VOIDED') {
+      throw new BadRequestException('单据已作废')
+    }
+    if ((order as any).reversalOrderId) {
+      throw new BadRequestException('该单据已生成冲销单')
+    }
+
+    const originalIsInbound = this.isInboundOrderType(order.orderType as any)
+    const reversalType = originalIsInbound ? 'OUTBOUND_LOST' : 'INBOUND_UNKNOWN'
+
+    const prefixMap: Record<string, string> = {
+      OUTBOUND_SALES: 'CK',
+      OUTBOUND_LOAN: 'JH',
+      OUTBOUND_AFTER_SALES: 'SH',
+      OUTBOUND_LOST: 'DS',
+      INBOUND_SALES: 'RK',
+      INBOUND_PURCHASE: 'CG',
+      INBOUND_AFTER_SALES: 'RH',
+      INBOUND_UNKNOWN: 'WR',
+    }
+    const reversalNo = await this.generateOrderNo(tenantId, prefixMap[reversalType] || 'WR')
+
+    const reversal = await this.prisma.$transaction(async (tx) => {
+      const reversalOrder = await tx.warehouseOrder.create({
+        data: {
+          tenantId,
+          orderNo: reversalNo,
+          orderType: reversalType as any,
+          status: 'POSTED' as any,
+          projectId: order.projectId,
+          relatedOrderId: order.id,
+          occurredAt: new Date(),
+          remark: `冲销单（原单：${order.orderNo}）\n原因：${reason || ''}`,
+          operatorId,
+          reversalOfId: order.id,
+          items: {
+            create: order.items.map((item) => ({
+              tenantId,
+              productId: item.productId,
+              quantity: item.quantity,
+              snCodes: item.snCodes as any,
+              remark: item.remark,
+              unitPrice: item.unitPrice,
+            })),
+          },
+        },
+        include: { items: true },
+      })
+
+      // reverse inventory impact
+      for (const item of order.items as any[]) {
+        const existing = await tx.inventory.findUnique({ where: { productId: item.productId } })
+        if (originalIsInbound) {
+          // original inbound increased inventory; reversal should decrease
+          if (!existing || existing.quantity < item.quantity) {
+            throw new BadRequestException('冲销失败：库存不足')
+          }
+          await tx.inventory.update({
+            where: { productId: item.productId },
+            data: { quantity: { decrement: item.quantity }, lastUpdatedAt: new Date() },
+          })
+        } else {
+          // original outbound decreased inventory; reversal should increase
+          if (existing) {
+            await tx.inventory.update({
+              where: { productId: item.productId },
+              data: { quantity: { increment: item.quantity }, lastUpdatedAt: new Date() },
+            })
+          } else {
+            await tx.inventory.create({
+              data: { tenantId, productId: item.productId, quantity: item.quantity },
+            })
+          }
+        }
+      }
+
+      await tx.warehouseOrder.update({
+        where: { id: order.id },
+        data: {
+          status: 'VOIDED' as any,
+          reversalOrderId: reversalOrder.id,
+          voidReason: reason,
+          voidedAt: new Date(),
+        },
+      })
+
+      await tx.warehouseOrderLog.create({
+        data: {
+          tenantId,
+          orderId: order.id,
+          operatorId,
+          action: 'VOID',
+          changes: { reason, reversalOrderId: reversalOrder.id } as any,
+        },
+      })
+
+      return reversalOrder
+    })
+
+    return reversal
+  }
+
+  async createInventoryCheck(tenantId: string, dto: CreateInventoryCheckDto) {
+    if (!dto.items?.length) throw new BadRequestException('盘点明细不能为空')
+
+    const items = dto.items.map((it) => ({
+      ...it,
+      diffQty: it.countedQty - it.systemQty,
+    }))
+
+    return this.prisma.inventoryCheck.create({
+      data: {
+        tenantId,
+        remark: dto.remark,
+        items: {
+          create: items.map((it) => ({
+            tenantId,
+            productId: it.productId,
+            systemQty: it.systemQty,
+            countedQty: it.countedQty,
+            diffQty: it.diffQty,
+            remark: it.remark,
+          })),
+        },
+      },
+      include: { items: { include: { product: true } } },
+    })
+  }
+
+  async listInventoryChecks(tenantId: string) {
+    return this.prisma.inventoryCheck.findMany({
+      where: { tenantId },
+      include: { items: true, orders: true, approver: true },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    })
+  }
+
+  async getInventoryCheck(tenantId: string, id: string) {
+    const check = await this.prisma.inventoryCheck.findFirst({
+      where: { tenantId, id },
+      include: {
+        items: { include: { product: true } },
+        orders: { include: { order: { include: { items: { include: { product: true } } } } } },
+        approver: true,
+      },
+    })
+    if (!check) throw new NotFoundException('盘点单不存在')
+    return check
+  }
+
+  async approveInventoryCheck(tenantId: string, approverId: string, id: string, dto: ApproveInventoryCheckDto) {
+    const check = await this.getInventoryCheck(tenantId, id)
+    if ((check as any).status !== 'DRAFT') {
+      throw new BadRequestException('只有草稿盘点单可以审核')
+    }
+
+    const positives = (check.items as any[]).filter((it) => it.diffQty > 0)
+    const negatives = (check.items as any[]).filter((it) => it.diffQty < 0)
+
+    const createdOrders = await this.prisma.$transaction(async (tx) => {
+      const orders: any[] = []
+
+      const createAdjustmentOrder = async (orderType: string, items: any[]) => {
+        if (!items.length) return null
+        const prefixMap: Record<string, string> = {
+          OUTBOUND_SALES: 'CK',
+          OUTBOUND_LOAN: 'JH',
+          OUTBOUND_AFTER_SALES: 'SH',
+          OUTBOUND_LOST: 'DS',
+          INBOUND_SALES: 'RK',
+          INBOUND_PURCHASE: 'CG',
+          INBOUND_AFTER_SALES: 'RH',
+          INBOUND_UNKNOWN: 'WR',
+        }
+        const orderNo = await this.generateOrderNo(tenantId, prefixMap[orderType] || 'WR')
+
+        const order = await tx.warehouseOrder.create({
+          data: {
+            tenantId,
+            orderNo,
+            orderType: orderType as any,
+            status: 'POSTED' as any,
+            remark: `盘点调整单（盘点单：${check.id}）\n${dto.remark || ''}`.trim(),
+            operatorId: approverId,
+            items: {
+              create: items.map((it) => ({
+                tenantId,
+                productId: it.productId,
+                quantity: Math.abs(it.diffQty),
+              })),
+            },
+          },
+          include: { items: true },
+        })
+
+        // apply inventory impact
+        const isInbound = this.isInboundOrderType(orderType)
+        for (const it of items) {
+          const qty = Math.abs(it.diffQty)
+          const existing = await tx.inventory.findUnique({ where: { productId: it.productId } })
+          if (isInbound) {
+            if (existing) {
+              await tx.inventory.update({
+                where: { productId: it.productId },
+                data: { quantity: { increment: qty }, lastUpdatedAt: new Date() },
+              })
+            } else {
+              await tx.inventory.create({ data: { tenantId, productId: it.productId, quantity: qty } })
+            }
+          } else {
+            if (!existing || existing.quantity < qty) throw new BadRequestException('盘点调整失败：库存不足')
+            await tx.inventory.update({
+              where: { productId: it.productId },
+              data: { quantity: { decrement: qty }, lastUpdatedAt: new Date() },
+            })
+          }
+        }
+
+        await tx.inventoryCheckOrder.create({
+          data: { tenantId, checkId: check.id, orderId: order.id },
+        })
+        orders.push(order)
+        return order
+      }
+
+      await createAdjustmentOrder('INBOUND_UNKNOWN', positives)
+      await createAdjustmentOrder('OUTBOUND_LOST', negatives)
+
+      await tx.inventoryCheck.update({
+        where: { id: check.id },
+        data: {
+          status: 'APPROVED' as any,
+          approvedAt: new Date(),
+          approverId,
+          remark: dto.remark ? `${check.remark || ''}\n${dto.remark}`.trim() : check.remark,
+        },
+      })
+
+      return orders
+    })
+
+    return { success: true, orders: createdOrders }
+  }
+
+  async traceSn(tenantId: string, sn: string) {
+    if (!sn) throw new BadRequestException('sn 不能为空')
+
+    const [applications, orders] = await Promise.all([
+      this.prisma.outboundApplication.findMany({
+        where: { tenantId, items: { some: { snCodes: { has: sn } } } },
+        include: { project: true, applicant: true, reviewer: true, items: { include: { product: true } }, convertedOrder: true },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+      this.prisma.warehouseOrder.findMany({
+        where: { tenantId, items: { some: { snCodes: { has: sn } } } },
+        include: { project: true, operator: true, items: { include: { product: true } } },
+        orderBy: { occurredAt: 'desc' },
+        take: 100,
+      }),
+    ])
+
+    return { sn, applications, orders }
   }
 
   async listWarehouseOrderLogs(tenantId: string, query: QueryWarehouseOrderLogDto) {

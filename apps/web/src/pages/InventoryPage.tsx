@@ -1,14 +1,26 @@
-import { ReloadOutlined, PrinterOutlined, DollarOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Row, Space, Statistic, Table, Tag, message } from 'antd'
+import { ReloadOutlined, PrinterOutlined, DollarOutlined, PlusOutlined, CheckOutlined } from '@ant-design/icons'
+import { Button, Card, Col, Modal, Row, Space, Statistic, Table, Tag, message, InputNumber, Input } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useEffect, useState } from 'react'
-import { listInventory, getInventoryCost, type Inventory, type InventoryCost } from '../api/warehouse'
+import {
+  listInventory,
+  getInventoryCost,
+  createInventoryCheck,
+  approveInventoryCheck,
+  type Inventory,
+  type InventoryCost,
+} from '../api/warehouse'
+import { listEmployees } from '../api/employees'
 import { PageHeader } from '../components/PageHeader'
 
 export function InventoryPage() {
   const [loading, setLoading] = useState(false)
   const [rows, setRows] = useState<Inventory[]>([])
   const [costData, setCostData] = useState<InventoryCost | null>(null)
+  const [checkOpen, setCheckOpen] = useState(false)
+  const [checkSaving, setCheckSaving] = useState(false)
+  const [checkRemark, setCheckRemark] = useState('')
+  const [counted, setCounted] = useState<Record<string, number>>({})
 
   async function refresh() {
     setLoading(true)
@@ -93,6 +105,46 @@ export function InventoryPage() {
     window.print()
   }
 
+  const openCheck = () => {
+    const init: Record<string, number> = {}
+    for (const r of rows) {
+      init[r.productId] = r.quantity
+    }
+    setCounted(init)
+    setCheckRemark('')
+    setCheckOpen(true)
+  }
+
+  const submitCheck = async () => {
+    setCheckSaving(true)
+    try {
+      const emps = await listEmployees()
+      const approverId = emps[0]?.id
+      if (!approverId) {
+        message.error('找不到操作人（员工）')
+        return
+      }
+
+      const payload = {
+        remark: checkRemark || undefined,
+        items: rows.map((r) => ({
+          productId: r.productId,
+          systemQty: r.quantity,
+          countedQty: Number(counted[r.productId] ?? r.quantity),
+        })),
+      }
+      const check = await createInventoryCheck(payload)
+      await approveInventoryCheck(check.id, approverId, '盘点单审核：自动生成调整单')
+      message.success('盘点完成：已生成调整单并更新库存')
+      setCheckOpen(false)
+      await refresh()
+    } catch (e: any) {
+      message.error(e?.response?.data?.message ?? '盘点失败')
+    } finally {
+      setCheckSaving(false)
+    }
+  }
+
   return (
     <Card>
       <PageHeader
@@ -102,6 +154,9 @@ export function InventoryPage() {
           <Space>
             <Button icon={<ReloadOutlined />} onClick={refresh} loading={loading}>
               刷新
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCheck} disabled={!rows.length}>
+              创建盘点单
             </Button>
             <Button icon={<PrinterOutlined />} onClick={handlePrint}>
               打印
@@ -172,6 +227,61 @@ export function InventoryPage() {
           </Table.Summary>
         )}
       />
+
+      <Modal
+        title="库存盘点单"
+        open={checkOpen}
+        onCancel={() => setCheckOpen(false)}
+        onOk={submitCheck}
+        confirmLoading={checkSaving}
+        okText="审核并生成调整单"
+        okButtonProps={{ icon: <CheckOutlined /> }}
+        width={900}
+        destroyOnClose
+      >
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ marginBottom: 8 }}>备注（可选）</div>
+          <Input value={checkRemark} onChange={(e) => setCheckRemark(e.target.value)} placeholder="本次盘点说明" />
+        </div>
+
+        <Table
+          rowKey="productId"
+          dataSource={rows}
+          pagination={{ pageSize: 20, showSizeChanger: true, pageSizeOptions: [10, 20, 50, 100] }}
+          columns={[
+            { title: '产品', dataIndex: ['product', 'name'], width: 220 },
+            { title: '分类', dataIndex: ['product', 'category'], width: 140 },
+            { title: '系统库存', dataIndex: 'quantity', width: 100 },
+            {
+              title: '盘点数量',
+              key: 'countedQty',
+              width: 140,
+              render: (_, r: Inventory) => (
+                <InputNumber
+                  min={0}
+                  precision={0}
+                  style={{ width: '100%' }}
+                  value={counted[r.productId] ?? r.quantity}
+                  onChange={(v) => setCounted((prev) => ({ ...prev, [r.productId]: Number(v ?? 0) }))}
+                />
+              ),
+            },
+            {
+              title: '差异',
+              key: 'diff',
+              width: 100,
+              render: (_, r: Inventory) => {
+                const c = Number(counted[r.productId] ?? r.quantity)
+                const diff = c - r.quantity
+                if (diff === 0) return '-'
+                return <span style={{ color: diff > 0 ? '#3f8600' : '#cf1322' }}>{diff > 0 ? `+${diff}` : diff}</span>
+              },
+            },
+          ]}
+          scroll={{ x: 'max-content', y: 360 }}
+          size="small"
+        />
+      </Modal>
     </Card>
   )
 }

@@ -18,6 +18,7 @@ import {
   QueryWarehouseOrderDto,
   QueryWarehouseOrderLogDto,
 } from './dto/warehouse-order.dto'
+import { ApproveInventoryCheckDto, CreateInventoryCheckDto } from './dto/inventory-check.dto'
 
 @ApiTags('仓库管理')
 @ApiBearerAuth()
@@ -175,6 +176,19 @@ export class WarehouseController {
     return this.service.deleteWarehouseOrder(tenantId, operatorId, id)
   }
 
+  @Post('orders/:id/void')
+  @ApiOperation({ summary: '作废出入库单（生成冲销单）' })
+  @ApiParam({ name: 'id', description: '出入库单ID' })
+  @RequirePermissions('warehouse.orders.manage')
+  async voidWarehouseOrder(
+    @CurrentTenant() tenantId: string,
+    @Body('operatorId') operatorId: string,
+    @Param('id') id: string,
+    @Body('reason') reason: string,
+  ) {
+    return this.service.voidWarehouseOrder(tenantId, operatorId, id, reason)
+  }
+
   @Get('inventory')
   @ApiOperation({ summary: '获取库存列表' })
   @RequirePermissions('warehouse.inventory.read')
@@ -199,6 +213,54 @@ export class WarehouseController {
     @Body('remark') remark?: string,
   ) {
     return this.service.adjustInventory(tenantId, productId, quantity, remark)
+  }
+
+  @Post('inventory-checks')
+  @ApiOperation({ summary: '创建库存盘点单' })
+  @RequirePermissions('warehouse.orders.manage')
+  async createInventoryCheck(
+    @CurrentTenant() tenantId: string,
+    @Body() dto: CreateInventoryCheckDto,
+  ) {
+    return this.service.createInventoryCheck(tenantId, dto)
+  }
+
+  @Get('inventory-checks')
+  @ApiOperation({ summary: '获取库存盘点单列表' })
+  @RequirePermissions('warehouse.inventory.read')
+  async listInventoryChecks(@CurrentTenant() tenantId: string) {
+    return this.service.listInventoryChecks(tenantId)
+  }
+
+  @Get('inventory-checks/:id')
+  @ApiOperation({ summary: '获取库存盘点单详情' })
+  @ApiParam({ name: 'id', description: '盘点单ID' })
+  @RequirePermissions('warehouse.inventory.read')
+  async getInventoryCheck(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.service.getInventoryCheck(tenantId, id)
+  }
+
+  @Post('inventory-checks/:id/approve')
+  @ApiOperation({ summary: '审核库存盘点单（生成盘盈/盘亏冲销单）' })
+  @ApiParam({ name: 'id', description: '盘点单ID' })
+  @RequirePermissions('warehouse.orders.manage')
+  async approveInventoryCheck(
+    @CurrentTenant() tenantId: string,
+    @Body('approverId') approverId: string,
+    @Param('id') id: string,
+    @Body() dto: ApproveInventoryCheckDto,
+  ) {
+    return this.service.approveInventoryCheck(tenantId, approverId, id, dto)
+  }
+
+  @Get('sn-trace')
+  @ApiOperation({ summary: 'SN 码流转追踪（申请单/出入库单链路）' })
+  @RequirePermissions('warehouse.inventory.read')
+  async traceSn(
+    @CurrentTenant() tenantId: string,
+    @Query('sn') sn: string,
+  ) {
+    return this.service.traceSn(tenantId, sn)
   }
 
   @Get('logs')

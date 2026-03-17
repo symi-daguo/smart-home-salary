@@ -178,6 +178,16 @@ enum WarehouseOrderType {
   INBOUND_UNKNOWN // 未知入库单
 }
 
+enum WarehouseOrderStatus {
+  POSTED // 已过账（已影响库存）
+  VOIDED // 已作废（已冲销）
+}
+
+enum InventoryCheckStatus {
+  DRAFT // 草稿
+  APPROVED // 已审核（已生成盘盈/盘亏冲销单）
+}
+
 enum OutboundApplicationStatus {
   DRAFT // 草稿
   PENDING_REVIEW // 待审核
@@ -693,10 +703,15 @@ model WarehouseOrder {
   tenantId        String
   orderNo         String
   orderType       WarehouseOrderType
+  status          WarehouseOrderStatus @default(POSTED)
   projectId       String?
   relatedOrderId  String?
   relatedOrderIds String?
   applicationId   String?            @unique
+  reversalOfId    String?            @unique
+  reversalOrderId String?
+  voidReason      String?
+  voidedAt        DateTime?
   occurredAt      DateTime           @default(now())
   paymentType     PaymentType?
   expressNo       String?
@@ -709,6 +724,8 @@ model WarehouseOrder {
   tenant      Tenant               @relation(fields: [tenantId], references: [id])
   project     Project?             @relation(fields: [projectId], references: [id])
   application OutboundApplication? @relation(fields: [applicationId], references: [id])
+  reversalOf  WarehouseOrder?      @relation("WarehouseOrderReversal", fields: [reversalOfId], references: [id])
+  reversal    WarehouseOrder?      @relation("WarehouseOrderReversal")
   operator    Employee?            @relation("OrdersByOperator", fields: [operatorId], references: [id])
   items       WarehouseOrderItem[]
   logs        WarehouseOrderLog[]
@@ -717,9 +734,66 @@ model WarehouseOrder {
   @@index([tenantId])
   @@index([projectId])
   @@index([orderType])
+  @@index([status])
   @@index([occurredAt])
 }
 
+model InventoryCheck {
+  id        String              @id @default(uuid())
+  tenantId  String
+  status    InventoryCheckStatus @default(DRAFT)
+  remark    String?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  approvedAt DateTime?
+  approverId String?
+
+  tenant   Tenant     @relation(fields: [tenantId], references: [id])
+  approver Employee?  @relation(fields: [approverId], references: [id])
+  items    InventoryCheckItem[]
+  orders   InventoryCheckOrder[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model InventoryCheckItem {
+  id            String   @id @default(uuid())
+  tenantId      String
+  checkId       String
+  productId     String
+  systemQty     Int
+  countedQty    Int
+  diffQty       Int
+  remark        String?
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id])
+  check   InventoryCheck @relation(fields: [checkId], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [productId], references: [id])
+
+  @@unique([tenantId, checkId, productId])
+  @@index([tenantId])
+  @@index([checkId])
+  @@index([productId])
+}
+
+model InventoryCheckOrder {
+  id        String   @id @default(uuid())
+  tenantId  String
+  checkId   String
+  orderId   String
+  createdAt DateTime @default(now())
+
+  tenant Tenant         @relation(fields: [tenantId], references: [id])
+  check  InventoryCheck @relation(fields: [checkId], references: [id], onDelete: Cascade)
+  order  WarehouseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, checkId, orderId])
+  @@index([tenantId])
+  @@index([checkId])
+  @@index([orderId])
+}
 model WarehouseOrderItem {
   id        String   @id @default(uuid())
   tenantId  String

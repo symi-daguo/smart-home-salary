@@ -12,6 +12,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false,
+    // 生产 sourcemap：用于错误定位；不在浏览器 DevTools 直接暴露源码
+    sourcemap: 'hidden',
   },
 });

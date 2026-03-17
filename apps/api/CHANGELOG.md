@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [1.1.5] - 2026-03-17
 
+### Added
+- 仓库：出入库单作废/冲销机制（作废会生成冲销单并回滚库存影响）
+- 仓库：库存盘点单（创建/详情/审核），审核后自动生成盘盈/盘亏调整单并更新库存
+- 仓库：SN 码流转追踪接口（按 SN 查询关联的申请单与出入库单链路）
+
 ### Security
 - Tauri：启用 CSP（不再使用 `csp: null`）
 - Tauri：移除不必要的 shell 插件与过宽权限（移除 `shell:allow-execute/spawn/kill`）

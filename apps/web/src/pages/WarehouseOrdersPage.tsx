@@ -1,4 +1,4 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, StopOutlined } from '@ant-design/icons'
 import {
   Button,
   Card,
@@ -25,6 +25,7 @@ import {
   createWarehouseOrder,
   updateWarehouseOrder,
   deleteWarehouseOrder,
+  voidWarehouseOrder,
   type WarehouseOrder,
   WarehouseOrderType,
   type PaymentType,
@@ -254,12 +255,43 @@ export function WarehouseOrdersPage() {
           </Button>
           <Button
             size="small"
+            icon={<StopOutlined />}
+            onClick={() => {
+              Modal.confirm({
+                title: '确认作废（冲销）',
+                content: (
+                  <div>
+                    <div style={{ marginBottom: 8 }}>将为单据「{r.orderNo}」生成冲销单，并回滚库存影响。</div>
+                    <Input id="void-reason" placeholder="作废原因（可选）" />
+                  </div>
+                ),
+                okText: '作废',
+                cancelText: '取消',
+                onOk: async () => {
+                  const operatorId = employees[0]?.id
+                  if (!operatorId) {
+                    message.error('找不到操作人')
+                    return
+                  }
+                  const input = document.getElementById('void-reason') as HTMLInputElement | null
+                  const reason = input?.value ?? ''
+                  await voidWarehouseOrder(r.id, operatorId, reason)
+                  message.success('作废成功（已生成冲销单）')
+                  await load()
+                },
+              })
+            }}
+          >
+            作废
+          </Button>
+          <Button
+            size="small"
             danger
             icon={<DeleteOutlined />}
             onClick={() => {
               Modal.confirm({
                 title: '确认删除',
-                content: `确定要删除单据「${r.orderNo}」吗？`,
+                content: `确定要删除单据「${r.orderNo}」吗？（建议优先使用“作废/冲销”以保证库存与审计可追溯）`,
                 okText: '删除',
                 okButtonProps: { danger: true },
                 cancelText: '取消',
