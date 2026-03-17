@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-03-17
+
+### Added
+- **GitHub Actions 自动化打包**
+  - 新增 `.github/workflows/build.yml` 跨平台打包配置
+  - 支持 Windows/macOS/Linux 三平台自动构建
+  - 推送 tag 时自动触发打包并创建 Release
+- **README.md 优化**
+  - 精简版本历史，合并 v1.0.4-v1.0.8 内容
+  - 添加徽章（版本、许可证、构建状态）
+  - 优化表格布局，提高可读性
+
+### Changed
+- 修复 bundle identifier 从 `com.smarthome.app` 改为 `com.smarthome.desktop`
+- 版本号更新至 v1.1.0
+
 ## [1.0.9] - 2026-03-17
 
 ### Added

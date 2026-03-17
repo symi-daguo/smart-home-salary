@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "SmartHome",
-  "version": "1.0.9",
-  "identifier": "com.smarthome.app",
+  "version": "1.1.0",
+  "identifier": "com.smarthome.desktop",
   "build": {
     "frontendDist": "../apps/web/dist",
     "devUrl": "http://localhost:5173",
