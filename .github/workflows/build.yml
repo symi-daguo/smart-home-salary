@@ -78,15 +78,24 @@ jobs:
           # 3) Copy API source code (without node_modules and dist)
           rm -rf src-tauri/resources/api/*
           
-          # Use cp instead of rsync for better cross-platform compatibility
-          cp -r apps/api/package.json apps/api/package-lock.json src-tauri/resources/api/
-          cp -r apps/api/prisma src-tauri/resources/api/
-          cp -r apps/api/src src-tauri/resources/api/
-          cp -r apps/api/dist src-tauri/resources/api/
+          # Copy all API files except node_modules, dist, and large files
+          cd apps/api
+          find . -type f \
+            ! -path '*/node_modules/*' \
+            ! -path '*/.git/*' \
+            ! -name '*.db' \
+            ! -name '*.log' \
+            -exec bash -c 'mkdir -p ../../src-tauri/resources/api/$(dirname "$1") && cp "$1" ../../src-tauri/resources/api/$(dirname "$1")/' _ {} \;
           
-          # Copy other necessary files but exclude node_modules
-          find apps/api -maxdepth 1 -type f -exec cp {} src-tauri/resources/api/ \;
-          find apps/api -maxdepth 1 -type d ! -name node_modules ! -name dist -exec cp -r {} src-tauri/resources/api/ \; 2>/dev/null || true
+          # Copy dist directory (built API code)
+          cp -r dist ../../src-tauri/resources/api/
+          
+          cd ../..
+          
+          # Verify resources
+          echo "Resources prepared:"
+          ls -la src-tauri/resources/api/
+          ls -la src-tauri/resources/binaries/
 
       - name: Build frontend (apps/web)
         run: npm --workspace apps/web run build
