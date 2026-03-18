@@ -41,6 +41,20 @@ bundle/
 - **Linux（`.deb` / `.rpm`）**：更像“系统包”，通常依赖系统环境提供 WebView/GTK 等组件，因此体积可能只有 **几 MB**（但对系统依赖更敏感）。
 - **macOS（`.dmg` / `.app.tar.gz`）**：资源高度压缩 + Rust `strip` 后，体积可能看起来很小；是否“正确”以**能否安装并正常启动**为准。
 
+### 桌面安装包里到底包含什么？
+
+当前桌面端产物是 **Tauri 应用**，打包时会把前端静态资源内嵌进去（来自 `src-tauri/tauri.conf.json` 的 `build.frontendDist`）。
+
+- **包含**
+  - 桌面程序（Rust/Tauri）
+  - 前端构建产物（`apps/web/dist`）
+  - WebView2 引导安装器（Windows，按 `embedBootstrapper` 配置）
+- **不包含**
+  - NestJS API 服务进程
+  - PostgreSQL / Redis / MinIO 等 Docker 服务与其数据卷
+
+因此 Windows 的 `*x64-setup.exe` 只有几 MB 是正常的（Rust 可执行文件经过 `strip`、静态资源压缩后体积很小）。如需“完整业务可用”的后端与数据库，请使用 `infra/docker-compose.yml` 启动，或将 API 指向已部署环境。
+
 **推荐交付给普通用户：**
 - Windows：`*x64-setup.exe`
 - macOS：`*.dmg`
