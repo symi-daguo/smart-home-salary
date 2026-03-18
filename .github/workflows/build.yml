@@ -66,9 +66,11 @@ jobs:
           mkdir -p src-tauri/resources/api src-tauri/resources/binaries
 
           # 1) Build API
+          echo "Building API..."
           npm --workspace apps/api run build
 
           # 2) Generate SQLite seed DB (for offline desktop mode)
+          echo "Generating SQLite seed DB..."
           export DATABASE_URL="file:$(pwd)/apps/api/prisma/desktop-seed.db"
           npm --workspace apps/api run prisma:dbpush:sqlite
           npm --workspace apps/api run prisma:generate:sqlite
@@ -76,26 +78,50 @@ jobs:
           cp -f apps/api/prisma/desktop-seed.db src-tauri/resources/binaries/seed.db || echo "No seed db"
 
           # 3) Copy API source code (without node_modules and dist)
+          echo "Copying API source code..."
           rm -rf src-tauri/resources/api/*
           
-          # Copy all API files except node_modules, dist, and large files
+          # Use a simpler and more reliable approach
           cd apps/api
-          find . -type f \
-            ! -path '*/node_modules/*' \
-            ! -path '*/.git/*' \
-            ! -name '*.db' \
-            ! -name '*.log' \
-            -exec bash -c 'mkdir -p ../../src-tauri/resources/api/$(dirname "$1") && cp "$1" ../../src-tauri/resources/api/$(dirname "$1")/' _ {} \;
           
-          # Copy dist directory (built API code)
-          cp -r dist ../../src-tauri/resources/api/
+          # Create necessary directories
+          mkdir -p ../../src-tauri/resources/api/dist
+          mkdir -p ../../src-tauri/resources/api/prisma
+          
+          # Copy built API code
+          echo "Copying dist directory..."
+          cp -r dist/* ../../src-tauri/resources/api/dist/
+          
+          # Copy prisma schema and seed files
+          echo "Copying prisma files..."
+          cp -r prisma/*.prisma ../../src-tauri/resources/api/prisma/ 2>/dev/null || true
+          cp -r prisma/seed*.ts ../../src-tauri/resources/api/prisma/ 2>/dev/null || true
+          
+          # Copy source code
+          echo "Copying src directory..."
+          cp -r src ../../src-tauri/resources/api/
+          
+          # Copy package files
+          echo "Copying package files..."
+          cp package.json package-lock.json ../../src-tauri/resources/api/
+          
+          # Copy config files
+          echo "Copying config files..."
+          cp -r config ../../src-tauri/resources/api/ 2>/dev/null || true
+          cp tsconfig.json ../../src-tauri/resources/api/ 2>/dev/null || true
+          cp nest-cli.json ../../src-tauri/resources/api/ 2>/dev/null || true
+          cp .env.example ../../src-tauri/resources/api/.env 2>/dev/null || true
           
           cd ../..
           
           # Verify resources
           echo "Resources prepared:"
+          echo "API directory:"
           ls -la src-tauri/resources/api/
+          echo "Binaries directory:"
           ls -la src-tauri/resources/binaries/
+          echo "API dist directory:"
+          ls -la src-tauri/resources/api/dist/
 
       - name: Build frontend (apps/web)
         run: npm --workspace apps/web run build
