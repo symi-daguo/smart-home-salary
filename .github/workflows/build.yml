@@ -72,7 +72,7 @@ jobs:
           export DATABASE_URL="file:$(pwd)/apps/api/prisma/desktop-seed.db"
           npm --workspace apps/api run prisma:dbpush:sqlite
           npm --workspace apps/api run prisma:generate:sqlite
-          npm --workspace apps/api run seed:testdata
+          npm --workspace apps/api run seed:desktop
           cp -f apps/api/prisma/desktop-seed.db src-tauri/resources/binaries/seed.db
 
           # 3) Keep only production deps for bundling

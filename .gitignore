@@ -29,3 +29,12 @@ coverage/
 # 需求资料属于内部资料，不提交到仓库。
 需求资料/**
 
+# Tauri binaries and resources (build in CI)
+src-tauri/binaries/
+src-tauri/resources/
+src-tauri/target/
+
+# Prisma DB files
+apps/api/prisma/*.db
+apps/api/prisma/*.db-journal
+

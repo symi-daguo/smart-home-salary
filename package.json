@@ -43,7 +43,7 @@
     "test": "cd apps/api && npm test",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build --ci false"
+    "tauri:build": "tauri build"
   },
   "engines": {
     "node": ">=20.0.0",

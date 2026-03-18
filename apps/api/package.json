@@ -26,7 +26,8 @@
     "prisma:studio": "prisma studio",
     "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
     "seed:testdata": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-testdata.ts",
-    "seed:cleanup-testdata": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/cleanup-testdata.ts"
+    "seed:cleanup-testdata": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/cleanup-testdata.ts",
+    "seed:desktop": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-desktop.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1006.0",
