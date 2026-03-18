@@ -59,6 +59,40 @@ jobs:
       - name: Install dependencies (npm workspaces)
         run: npm install
 
+      - name: Prepare desktop B resources (embedded API + seed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p src-tauri/resources/api src-tauri/resources/binaries src-tauri/binaries
+
+          # 1) Build API
+          npm --workspace apps/api run build
+
+          # 2) Generate SQLite seed DB (for offline desktop mode)
+          export DATABASE_URL="file:$(pwd)/apps/api/prisma/desktop-seed.db"
+          npm --workspace apps/api run prisma:dbpush:sqlite
+          npm --workspace apps/api run prisma:generate:sqlite
+          npm --workspace apps/api run seed:testdata
+          cp -f apps/api/prisma/desktop-seed.db src-tauri/resources/binaries/seed.db
+
+          # 3) Keep only production deps for bundling
+          npm --workspace apps/api prune --omit=dev
+
+          # 4) Copy API runtime files into Tauri resources
+          rm -rf src-tauri/resources/api/dist src-tauri/resources/api/node_modules src-tauri/resources/api/prisma
+          cp -R apps/api/dist src-tauri/resources/api/dist
+          cp -R apps/api/node_modules src-tauri/resources/api/node_modules
+          cp -R apps/api/prisma src-tauri/resources/api/prisma
+
+          # 5) Bundle Node runtime as sidecar binary
+          if [[ "${{ matrix.platform }}" == "windows-latest" ]]; then
+            cp "$(command -v node)" "src-tauri/binaries/node-x86_64-pc-windows-msvc.exe"
+          elif [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
+            cp "$(command -v node)" "src-tauri/binaries/node-aarch64-apple-darwin"
+          else
+            cp "$(command -v node)" "src-tauri/binaries/node-x86_64-unknown-linux-gnu"
+          fi
+
       - name: Build frontend (apps/web)
         run: npm --workspace apps/web run build
 

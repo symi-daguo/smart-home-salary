@@ -3,10 +3,37 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { json, urlencoded } from 'express';
+import { json, static as expressStatic, urlencoded } from 'express';
 import helmet from 'helmet';
+import path from 'path';
+import { promises as fs } from 'fs';
+
+async function ensureDesktopSqliteSeed() {
+  const databaseUrl = String(process.env.DATABASE_URL || '');
+  if (!databaseUrl.startsWith('file:')) return;
+
+  const filePath = databaseUrl.slice('file:'.length);
+  if (!filePath) return;
+
+  const abs = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
+  try {
+    await fs.access(abs);
+    return;
+  } catch {
+    // continue
+  }
+
+  const seedDb = String(process.env.DESKTOP_SEED_DB || '');
+  if (!seedDb) return;
+
+  const seedAbs = path.isAbsolute(seedDb) ? seedDb : path.resolve(process.cwd(), seedDb);
+  await fs.mkdir(path.dirname(abs), { recursive: true });
+  await fs.copyFile(seedAbs, abs);
+}
 
 async function bootstrap() {
+  await ensureDesktopSqliteSeed();
+
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
@@ -33,6 +60,7 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
+  const uploadsDir = configService.get<string>('UPLOADS_DIR', '');
   const corsOrigin = configService.get<string>('CORS_ORIGIN', '');
   const frontendUrl = configService.get<string>('FRONTEND_URL', '');
   const allowOrigins = [corsOrigin, frontendUrl]
@@ -108,6 +136,14 @@ async function bootstrap() {
   }
 
   const port = configService.get<number>('PORT', 3000);
+
+  // Desktop/offline mode: serve local uploaded files.
+  // `UploadsService` will return `/uploads/...` URLs when `UPLOADS_DIR` is set.
+  if (uploadsDir) {
+    const abs = path.isAbsolute(uploadsDir) ? uploadsDir : path.resolve(process.cwd(), uploadsDir);
+    expressApp.use('/uploads', expressStatic(abs, { maxAge: '365d', immutable: true }));
+  }
+
   await app.listen(port);
   console.info(`API listening on http://localhost:${port}`);
   if (swaggerEnabled) console.info(`Swagger docs at http://localhost:${port}/docs`);

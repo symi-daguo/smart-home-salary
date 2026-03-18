@@ -2,7 +2,16 @@ import axios from 'axios'
 import { message } from 'antd'
 import { useAuthStore } from '../state/auth'
 
-const apiBase = import.meta.env.VITE_API_BASE ?? '/api'
+function detectDefaultApiBase() {
+  // Browser (Docker / dev): use relative /api so it can be proxied/reversed.
+  // Desktop (Tauri): default to local embedded API.
+  if (typeof window !== 'undefined' && (window as any).__TAURI__) {
+    return 'http://127.0.0.1:3000/api'
+  }
+  return '/api'
+}
+
+const apiBase = import.meta.env.VITE_API_BASE ?? detectDefaultApiBase()
 
 export const http = axios.create({
   baseURL: apiBase,

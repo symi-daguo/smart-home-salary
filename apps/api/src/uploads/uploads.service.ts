@@ -7,6 +7,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
+import { promises as fs } from 'fs';
+import path from 'path';
 import { TenantContextService } from '../common/tenant-context/tenant-context.service';
 
 type UploadKind = 'payment-proof' | 'installation-photo' | 'warehouse-image' | 'generic';
@@ -16,6 +18,7 @@ export class UploadsService {
   private readonly s3?: S3Client;
   private readonly bucket?: string;
   private readonly publicBaseUrl?: string;
+  private readonly localUploadsDir?: string;
 
   constructor(
     private readonly config: ConfigService,
@@ -27,6 +30,7 @@ export class UploadsService {
     const secretAccessKey = this.config.get<string>('S3_SECRET_ACCESS_KEY');
     const bucket = this.config.get<string>('S3_BUCKET', 'salary-uploads');
     const publicBaseUrl = (this.config.get<string>('S3_PUBLIC_BASE_URL') ?? '').replace(/\/+$/, '');
+    const uploadsDir = this.config.get<string>('UPLOADS_DIR', '');
 
     // 按需启用：测试环境或未配置对象存储时，不影响应用启动；仅在调用上传接口时报错
     if (endpoint && accessKeyId && secretAccessKey) {
@@ -38,6 +42,9 @@ export class UploadsService {
         credentials: { accessKeyId, secretAccessKey },
         forcePathStyle: true, // MinIO 需要 path-style
       });
+    } else if (uploadsDir) {
+      // Desktop / offline mode: store files on local filesystem and expose via /uploads/*
+      this.localUploadsDir = uploadsDir;
     }
   }
 
@@ -47,12 +54,6 @@ export class UploadsService {
     maxBytes: number;
     allowedMime: RegExp;
   }) {
-    if (!this.s3 || !this.bucket) {
-      throw new ServiceUnavailableException(
-        '对象存储未配置：请设置 S3_ENDPOINT/S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY/S3_BUCKET/S3_PUBLIC_BASE_URL',
-      );
-    }
-
     const { file, kind, maxBytes, allowedMime } = params;
     if (!file) throw new BadRequestException('缺少文件');
     if (file.size > maxBytes) {
@@ -67,6 +68,24 @@ export class UploadsService {
 
     const ext = this.guessExt(file.originalname, file.mimetype);
     const objectKey = `${tenantId}/${kind}/${new Date().toISOString().slice(0, 10)}/${randomUUID()}${ext}`;
+
+    if (this.localUploadsDir) {
+      const absPath = path.join(this.localUploadsDir, objectKey);
+      await fs.mkdir(path.dirname(absPath), { recursive: true });
+      await fs.writeFile(absPath, file.buffer);
+      return {
+        objectKey,
+        url: `/uploads/${objectKey}`,
+        contentType: file.mimetype,
+        bytes: file.size,
+      };
+    }
+
+    if (!this.s3 || !this.bucket) {
+      throw new ServiceUnavailableException(
+        '对象存储未配置：请设置 S3_ENDPOINT/S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY/S3_BUCKET/S3_PUBLIC_BASE_URL；或设置 UPLOADS_DIR 以启用本地存储（桌面离线模式）',
+      );
+    }
 
     try {
       await this.s3.send(

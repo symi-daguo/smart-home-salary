@@ -1,6 +1,6 @@
 # 智能家居行业SaaS管理系统
 
-[![Version](https://img.shields.io/badge/version-v1.1.7-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
+[![Version](https://img.shields.io/badge/version-v1.1.8-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml/badge.svg)](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml)
 
@@ -13,9 +13,8 @@
 下载对应平台的安装包，双击安装即可使用。
 
 > 说明（务必看清）：当前桌面版是 **Tauri 壳 + 已内嵌的前端页面资源**。
-> - 桌面端安装包 **包含**：桌面程序本体（Rust/Tauri）+ 前端构建产物（`apps/web/dist`）。
-> - 桌面端安装包 **不包含**：NestJS API、PostgreSQL/Redis/MinIO 等 Docker 服务与其数据文件。
->   - 如需完整业务功能与演示数据，请按下方「Docker部署」启动后端与依赖服务，或把 API 指向已部署环境。
+> - **A 方案（容器化/远端）**：桌面端只负责 UI，API/数据库由 Docker 或已部署环境提供。
+> - **B 方案（离线一体化）**：桌面端会自动拉起本地 API（内置 Node sidecar），默认使用 SQLite + 本地上传目录（无需 Docker）。
 
 | 平台 | 下载地址 | 说明 |
 |------|---------|------|
@@ -111,6 +110,10 @@ smarthome/
 | OpenClaw | `/api/openclaw` | 窗帘 | `/api/curtain-orders` |
 
 ## 📝 版本历史
+
+### v1.1.8 (2026-03-18)
+- 桌面端新增 **B 方案（离线一体化）**：启动时自动拉起本地 API（sidecar），默认使用 SQLite + 本地上传目录
+- 前端在 Tauri 环境下默认连接 `http://127.0.0.1:3000/api`（A 方案仍可通过配置指向远端/容器化 API）
 
 ### v1.1.7 (2026-03-18)
 - 需求确认：窗帘下单补齐送货上门接收人候选、送仓库/手动地址分支、房间媒体上传（图片≤3、视频≤30秒）

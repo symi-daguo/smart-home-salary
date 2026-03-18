@@ -1,6 +1,6 @@
 # Tauri 桌面应用打包指南
 
-> **当前版本：v1.1.7** | **最后更新：2026-03-18**
+> **当前版本：v1.1.8** | **最后更新：2026-03-18**
 
 本文档详细说明如何打包智能家居 SaaS 管理系统的桌面应用，支持 Windows、macOS 和 Linux。
 
@@ -23,15 +23,15 @@ npm run tauri:build
 ```
 bundle/
 ├── nsis/          # Windows NSIS 安装包
-│   └── SmartHome_1.1.7_x64-setup.exe
+│   └── SmartHome_1.1.8_x64-setup.exe
 ├── macos/         # macOS App
 │   └── SmartHome.app
 ├── dmg/           # macOS DMG 安装包
-│   └── SmartHome_1.1.7_aarch64.dmg
+│   └── SmartHome_1.1.8_aarch64.dmg
 ├── deb/           # Linux DEB 包
-│   └── SmartHome_1.1.7_amd64.deb
+│   └── SmartHome_1.1.8_amd64.deb
 └── appimage/      # Linux AppImage
-    └── SmartHome_1.1.7_amd64.AppImage
+    └── SmartHome_1.1.8_amd64.AppImage
 ```
 
 ### 为什么不同平台/格式体积差异很大？
@@ -45,15 +45,17 @@ bundle/
 
 当前桌面端产物是 **Tauri 应用**，打包时会把前端静态资源内嵌进去（来自 `src-tauri/tauri.conf.json` 的 `build.frontendDist`）。
 
-- **包含**
-  - 桌面程序（Rust/Tauri）
-  - 前端构建产物（`apps/web/dist`）
-  - WebView2 引导安装器（Windows，按 `embedBootstrapper` 配置）
-- **不包含**
-  - NestJS API 服务进程
-  - PostgreSQL / Redis / MinIO 等 Docker 服务与其数据卷
+本项目支持两套交付方案（A/B）并行：
 
-因此 Windows 的 `*x64-setup.exe` 只有几 MB 是正常的（Rust 可执行文件经过 `strip`、静态资源压缩后体积很小）。如需“完整业务可用”的后端与数据库，请使用 `infra/docker-compose.yml` 启动，或将 API 指向已部署环境。
+- **A 方案（容器化/远端）**
+  - **包含**：桌面程序 + 前端资源
+  - **不包含**：后端 API / 数据库 / 对象存储（需要 Docker 或已部署环境）
+  - **特征**：Windows 安装包通常只有几 MB（正常）
+
+- **B 方案（离线一体化，v1.1.8 起）**
+  - **包含**：桌面程序 + 前端资源 + 本地 API（Node sidecar）+ SQLite 种子库 + 本地上传目录
+  - **不包含**：PostgreSQL/Redis/MinIO（不需要 Docker）
+  - **特征**：安装包会明显变大（因为需要携带 Node 与后端依赖），但可离线运行
 
 **推荐交付给普通用户：**
 - Windows：`*x64-setup.exe`

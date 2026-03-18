@@ -6,10 +6,20 @@ import { TenantContextService } from './tenant-context/tenant-context.service';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  constructor(private readonly tenantContext: TenantContextService) {
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    const adapter = new PrismaPg(pool);
-    super({ adapter });
+  private readonly tenantContext: TenantContextService;
+
+  constructor(tenantContext: TenantContextService) {
+    const databaseUrl = String(process.env.DATABASE_URL || '');
+    const provider = String(process.env.DATABASE_PROVIDER || '');
+
+    const isSqlite = provider === 'sqlite' || databaseUrl.startsWith('file:');
+    const prismaOptions = isSqlite
+      ? undefined
+      : { adapter: new PrismaPg(new Pool({ connectionString: databaseUrl })) };
+
+    // SQLite mode (desktop/offline): use Prisma's default driver (no PG adapter).
+    super(prismaOptions as any);
+    this.tenantContext = tenantContext;
   }
 
   async onModuleInit() {

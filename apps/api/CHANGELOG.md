@@ -10,6 +10,11 @@ All notable changes to this project will be documented in this file.
 - 仓库：SN 码数量与出入库数量一致性强校验（避免单据与 SN 不一致）
 - Docker（dev）：启动自动注入演示数据（seed:testdata），保证页面有数据可展示
 
+## [1.1.8] - 2026-03-18
+
+### Added
+- 桌面端离线一体化（B 方案）：内置本地 API（Node sidecar）+ SQLite（本地文件）+ 本地上传目录（无需 MinIO）
+
 ## [1.1.5] - 2026-03-17
 
 ### Added

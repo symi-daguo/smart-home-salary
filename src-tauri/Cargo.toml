@@ -1,6 +1,6 @@
 [package]
 name = "smarthome"
-version = "1.1.7"
+version = "1.1.8"
 description = "智能家居行业SaaS管理系统桌面版"
 authors = ["SYMI-DA GUO"]
 license = "MIT"
@@ -21,6 +21,7 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-log = "2"
+tauri-plugin-shell = "2"
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 
 [target.'cfg(windows)'.dependencies]
