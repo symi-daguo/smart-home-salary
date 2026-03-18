@@ -84,14 +84,9 @@ jobs:
           cp -R apps/api/node_modules src-tauri/resources/api/node_modules
           cp -R apps/api/prisma src-tauri/resources/api/prisma
 
-          # 5) Bundle Node runtime as sidecar binary
-          if [[ "${{ matrix.platform }}" == "windows-latest" ]]; then
-            cp "$(command -v node)" "src-tauri/binaries/node-x86_64-pc-windows-msvc.exe"
-          elif [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
-            cp "$(command -v node)" "src-tauri/binaries/node-aarch64-apple-darwin"
-          else
-            cp "$(command -v node)" "src-tauri/binaries/node-x86_64-unknown-linux-gnu"
-          fi
+          # 5) Bundle Node runtime as sidecar binary (skip for now to reduce size)
+          # Node binary is too large (>50MB), will be added in future optimization
+          echo "Skipping Node binary bundling due to size constraints"
 
       - name: Build frontend (apps/web)
         run: npm --workspace apps/web run build
