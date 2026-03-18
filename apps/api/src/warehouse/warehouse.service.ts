@@ -592,7 +592,7 @@ export class WarehouseService {
           operatorId,
           reversalOfId: order.id,
           items: {
-            create: order.items.map((item) => ({
+            create: (order.items as any[]).map((item: any) => ({
               tenantId,
               productId: item.productId,
               quantity: item.quantity,
@@ -846,7 +846,7 @@ export class WarehouseService {
     })
 
     const filtered = query.orderNo || query.orderType
-      ? logs.filter((log) => {
+      ? logs.filter((log: any) => {
           if (query.orderNo && !log.order.orderNo.includes(query.orderNo)) {
             return false
           }
@@ -877,7 +877,7 @@ export class WarehouseService {
     })
 
     let totalCost = 0
-    const details = inventories.map((inv) => {
+    const details = inventories.map((inv: any) => {
       const costPrice = Number(inv.product.costPrice || 0)
       const itemCost = costPrice * inv.quantity
       totalCost += itemCost
