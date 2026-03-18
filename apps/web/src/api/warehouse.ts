@@ -83,6 +83,7 @@ export type WarehouseOrder = {
   projectId?: string
   project?: { id: string; name: string }
   relatedOrderId?: string
+  relatedOrderIds?: string[]
   applicationId?: string
   reversalOrderId?: string
   voidReason?: string
@@ -187,6 +188,7 @@ export type CreateWarehouseOrderInput = {
   orderType: WarehouseOrderType
   projectId?: string
   relatedOrderId?: string
+  relatedOrderIds?: string[]
   occurredAt?: string
   paymentType?: PaymentType
   expressNo?: string

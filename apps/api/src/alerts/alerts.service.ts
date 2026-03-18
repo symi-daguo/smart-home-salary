@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { AlertSeverity, AlertType, ProductStatus, ProjectStatus } from '@prisma/client';
+import { AlertCondition, AlertSeverity, AlertType, ProductStatus, ProjectStatus } from '@prisma/client';
 import { PrismaService } from '../common/prisma.service';
 
 type CompareBreakdownItem = {
@@ -30,6 +30,66 @@ function toNumber(d: any): number {
 @Injectable()
 export class AlertsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listRules() {
+    return this.prisma.alertRule.findMany({
+      where: this.prisma.getTenantWhere(),
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  async upsertRules(
+    rules: Array<{ condition: AlertCondition; threshold?: string; enabled?: boolean }>,
+  ) {
+    const tenantId = this.prisma.getTenantWhere().tenantId;
+    const results = [];
+    for (const r of rules) {
+      const name = r.condition;
+      results.push(
+        await this.prisma.alertRule.upsert({
+          where: { tenantId_name: { tenantId, name } },
+          update: {
+            enabled: r.enabled ?? true,
+            condition: r.condition,
+            threshold: r.threshold ? (r.threshold as any) : null,
+            type:
+              r.condition === AlertCondition.STOCK_BELOW_SUGGESTED
+                ? AlertType.INVENTORY
+                : AlertType.SALES,
+          },
+          create: this.prisma.getTenantData({
+            type:
+              r.condition === AlertCondition.STOCK_BELOW_SUGGESTED
+                ? AlertType.INVENTORY
+                : AlertType.SALES,
+            name,
+            condition: r.condition,
+            threshold: r.threshold ? (r.threshold as any) : null,
+            enabled: r.enabled ?? true,
+          }),
+        }),
+      );
+    }
+    return { success: true, count: results.length };
+  }
+
+  private async getRuleThreshold(condition: AlertCondition, fallback: number) {
+    const rule = await this.prisma.alertRule.findFirst({
+      where: this.prisma.getTenantWhere({ name: condition, enabled: true }),
+      select: { threshold: true },
+    });
+    if (!rule?.threshold) return fallback;
+    return toNumber(rule.threshold) || fallback;
+  }
+
+  private async isRuleEnabled(condition: AlertCondition, fallbackEnabled = true) {
+    const rule = await this.prisma.alertRule.findFirst({
+      where: this.prisma.getTenantWhere({ name: condition }),
+      select: { enabled: true },
+    });
+    if (!rule) return fallbackEnabled;
+    return !!rule.enabled;
+  }
 
   async list(params: { projectId?: string; severity?: AlertSeverity; unresolved?: boolean }) {
     return this.prisma.alert.findMany({
@@ -148,6 +208,9 @@ export class AlertsService {
   }
 
   async checkStockAlerts() {
+    const enabled = await this.isRuleEnabled(AlertCondition.STOCK_BELOW_SUGGESTED, true);
+    if (!enabled) return [];
+
     const products = await this.prisma.product.findMany({
       where: this.prisma.getTenantWhere({ status: ProductStatus.ACTIVE }),
       include: { inventory: true },
@@ -183,6 +246,11 @@ export class AlertsService {
   }
 
   async checkDiscountRateAlerts() {
+    const enabled = await this.isRuleEnabled(AlertCondition.DISCOUNT_BELOW_THRESHOLD, true);
+    if (!enabled) return [];
+
+    const threshold = await this.getRuleThreshold(AlertCondition.DISCOUNT_BELOW_THRESHOLD, 0.85);
+
     const projects = await this.prisma.project.findMany({
       where: this.prisma.getTenantWhere({ status: ProjectStatus.DONE }),
       include: {
@@ -221,20 +289,21 @@ export class AlertsService {
         productDiscountRate = (salesAmount - serviceFee) / (outboundAmount - serviceFee);
       }
 
-      if (productDiscountRate < 0.85) {
+      if (productDiscountRate < threshold) {
         const alert = await this.prisma.alert.create({
           data: this.prisma.getTenantData({
             projectId: project.id,
             alertType: AlertType.SALES,
             severity: AlertSeverity.WARNING,
             title: `折扣率过低预警：${project.name}`,
-            message: `项目「${project.name}」产品折扣率 ${(productDiscountRate * 100).toFixed(2)}%，低于85%`,
+            message: `项目「${project.name}」产品折扣率 ${(productDiscountRate * 100).toFixed(2)}%，低于阈值 ${(threshold * 100).toFixed(2)}%`,
             metadata: {
               projectName: project.name,
               productDiscountRate,
               salesAmount,
               outboundAmount,
               serviceFee,
+              threshold,
             },
           }),
         });
@@ -264,6 +333,9 @@ export class AlertsService {
   }
 
   async checkPaymentBelowOutbound() {
+    const enabled = await this.isRuleEnabled(AlertCondition.PAYMENT_BELOW_OUTBOUND, true);
+    if (!enabled) return [];
+
     const projects = await this.prisma.project.findMany({
       where: this.prisma.getTenantWhere(),
       include: {

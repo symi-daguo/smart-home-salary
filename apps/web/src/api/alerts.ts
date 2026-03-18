@@ -37,3 +37,29 @@ export async function runAllAlerts() {
   return resp.data
 }
 
+export type AlertCondition =
+  | 'DISCOUNT_BELOW_THRESHOLD'
+  | 'PAYMENT_BELOW_OUTBOUND'
+  | 'STOCK_BELOW_SUGGESTED'
+  | 'PROJECT_DISCOUNT_MISMATCH'
+
+export type AlertRule = {
+  id: string
+  type: 'SALES' | 'INVENTORY'
+  name: string
+  condition: AlertCondition
+  threshold?: string | null
+  enabled: boolean
+  updatedAt: string
+}
+
+export async function listAlertRules() {
+  const resp = await http.get<AlertRule[]>('/alerts/rules')
+  return resp.data
+}
+
+export async function saveAlertRules(rules: Array<{ condition: AlertCondition; threshold?: string; enabled?: boolean }>) {
+  const resp = await http.post<{ success: boolean; count: number }>('/alerts/rules', { rules })
+  return resp.data
+}
+

@@ -52,10 +52,16 @@ export class CreateWarehouseOrderDto {
   @IsUUID()
   projectId?: string
 
-  @ApiPropertyOptional({ description: '关联出入库单ID' })
+  @ApiPropertyOptional({ description: '关联出入库单ID（兼容旧字段，单选）' })
   @IsOptional()
   @IsUUID()
   relatedOrderId?: string
+
+  @ApiPropertyOptional({ description: '关联出入库单ID列表（多选）' })
+  @IsOptional()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  relatedOrderIds?: string[]
 
   @ApiPropertyOptional({ description: '发生时间' })
   @IsOptional()
@@ -97,10 +103,16 @@ export class UpdateWarehouseOrderDto {
   @IsUUID()
   projectId?: string
 
-  @ApiPropertyOptional({ description: '关联出入库单ID' })
+  @ApiPropertyOptional({ description: '关联出入库单ID（兼容旧字段，单选）' })
   @IsOptional()
   @IsUUID()
   relatedOrderId?: string
+
+  @ApiPropertyOptional({ description: '关联出入库单ID列表（多选）' })
+  @IsOptional()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  relatedOrderIds?: string[]
 
   @ApiPropertyOptional({ description: '发生时间' })
   @IsOptional()

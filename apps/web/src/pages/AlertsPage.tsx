@@ -1,10 +1,10 @@
-import { CheckOutlined, PlayCircleOutlined, ReloadOutlined, AlertOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Grid, Row, Select, Space, Table, Tag, message } from 'antd'
+import { CheckOutlined, PlayCircleOutlined, ReloadOutlined, AlertOutlined, SettingOutlined } from '@ant-design/icons'
+import { Button, Card, Col, Grid, Modal, Row, Select, Space, Table, Tag, message, Form, InputNumber, Switch } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
 import type { Alert, AlertSeverity } from '../api/alerts'
-import { listAlerts, resolveAlert, runAlertCompare, runAllAlerts } from '../api/alerts'
+import { listAlerts, resolveAlert, runAlertCompare, runAllAlerts, listAlertRules, saveAlertRules, type AlertCondition } from '../api/alerts'
 import type { Project } from '../api/projects'
 import { listProjects } from '../api/projects'
 import { ALERT_SEVERITY_LABELS } from '../constants/labels'
@@ -25,6 +25,9 @@ export function AlertsPage() {
   const [projectId, setProjectId] = useState<string | undefined>(undefined)
   const [severity, setSeverity] = useState<AlertSeverity | undefined>(undefined)
   const [unresolved, setUnresolved] = useState(true)
+  const [ruleOpen, setRuleOpen] = useState(false)
+  const [ruleSaving, setRuleSaving] = useState(false)
+  const [ruleForm] = Form.useForm()
 
   async function refresh() {
     setLoading(true)
@@ -44,6 +47,47 @@ export function AlertsPage() {
     refresh().catch((e) => message.error(e?.message ?? '加载失败'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const openRules = async () => {
+    try {
+      const rules = await listAlertRules()
+      const get = (cond: AlertCondition) => rules.find((r) => r.condition === cond)
+      const discount = get('DISCOUNT_BELOW_THRESHOLD')
+      const payment = get('PAYMENT_BELOW_OUTBOUND')
+      const stock = get('STOCK_BELOW_SUGGESTED')
+      ruleForm.setFieldsValue({
+        discountEnabled: discount?.enabled ?? true,
+        discountThreshold: discount?.threshold ? Number(discount.threshold) : 0.85,
+        paymentEnabled: payment?.enabled ?? true,
+        stockEnabled: stock?.enabled ?? true,
+      })
+      setRuleOpen(true)
+    } catch (e: any) {
+      message.error(e?.response?.data?.message ?? '加载规则失败')
+    }
+  }
+
+  const saveRules = async () => {
+    const values = await ruleForm.validateFields()
+    setRuleSaving(true)
+    try {
+      await saveAlertRules([
+        {
+          condition: 'DISCOUNT_BELOW_THRESHOLD',
+          enabled: !!values.discountEnabled,
+          threshold: String(values.discountThreshold ?? 0.85),
+        },
+        { condition: 'PAYMENT_BELOW_OUTBOUND', enabled: !!values.paymentEnabled },
+        { condition: 'STOCK_BELOW_SUGGESTED', enabled: !!values.stockEnabled },
+      ])
+      message.success('规则已保存')
+      setRuleOpen(false)
+    } catch (e: any) {
+      message.error(e?.response?.data?.message ?? '保存失败')
+    } finally {
+      setRuleSaving(false)
+    }
+  }
 
   const columns: ColumnsType<Alert> = useMemo(
     () => [
@@ -119,6 +163,9 @@ export function AlertsPage() {
             >
               运行全部预警
             </Button>
+            <Button icon={<SettingOutlined />} onClick={openRules}>
+              规则配置
+            </Button>
           </>
         }
       />
@@ -181,6 +228,34 @@ export function AlertsPage() {
         pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50] }}
         scroll={{ x: 'max-content' }}
       />
+
+      <Modal
+        open={ruleOpen}
+        title="预警规则配置"
+        onCancel={() => setRuleOpen(false)}
+        onOk={saveRules}
+        confirmLoading={ruleSaving}
+        destroyOnClose
+      >
+        <Form layout="vertical" form={ruleForm}>
+          <Form.Item label="启用：库存低于建议库存预警" name="stockEnabled" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item label="启用：收款低于出库金额预警" name="paymentEnabled" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item label="启用：折扣率低于阈值预警" name="discountEnabled" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item
+            label="折扣率阈值（例如 0.85 表示 85 折）"
+            name="discountThreshold"
+            rules={[{ required: true, message: '请输入阈值' }]}
+          >
+            <InputNumber min={0} max={1} step={0.01} style={{ width: '100%' }} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Card>
   )
 }

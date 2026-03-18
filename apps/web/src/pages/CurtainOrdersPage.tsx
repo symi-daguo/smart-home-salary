@@ -1,9 +1,12 @@
 import { PlusOutlined, ReloadOutlined, CalculatorOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Form, Input, InputNumber, Modal, Row, Select, Switch, Table, message, Divider, Typography, Space, Popconfirm } from 'antd'
+import { Button, Card, Col, Form, Input, InputNumber, Modal, Row, Select, Switch, Table, message, Divider, Typography, Space, Popconfirm, Upload } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { http } from '../api/http'
 import { PageHeader } from '../components/PageHeader'
 import { formRules, MODAL_WIDTH, INPUT_MAX_LENGTH, PLACEHOLDER } from '../utils/formRules'
+import type { UploadFile } from 'antd/es/upload/interface'
+import type { Employee } from '../api/employees'
+import { listEmployees } from '../api/employees'
 
 const { Text } = Typography
 
@@ -167,11 +170,33 @@ type RoomPriceDetail = {
   rodPrice: number
 }
 
+const MAX_ROOM_IMAGES = 3
+const MAX_ROOM_VIDEOS = 1
+
+async function checkVideoDuration(file: File, maxSeconds: number) {
+  try {
+    return await new Promise<boolean>((resolve) => {
+      const video = document.createElement('video')
+      video.preload = 'metadata'
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(video.src)
+        resolve(video.duration <= maxSeconds)
+      }
+      video.onerror = () => resolve(true)
+      video.src = URL.createObjectURL(file)
+    })
+  } catch {
+    return true
+  }
+}
+
 export function CurtainOrdersPage() {
   const [loading, setLoading] = useState(false)
   const [rows, setRows] = useState<CurtainOrder[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [currentUserName, setCurrentUserName] = useState<string>('')
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
@@ -198,17 +223,100 @@ export function CurtainOrdersPage() {
     [products],
   )
 
+  const employeeOptions = useMemo(
+    () =>
+      employees
+        .filter((e) => e.status === 'ACTIVE')
+        .map((e) => ({ value: e.name, label: `${e.name}${e.phone ? `（${e.phone}）` : ''}` })),
+    [employees],
+  )
+
+  const receiverOptions = useMemo(() => {
+    const projectId = form.getFieldValue('projectId') as string | undefined
+    const project = projects.find((p) => p.id === projectId)
+
+    const options: Array<{ value: string; label: string }> = []
+    if (project?.customerName) options.push({ value: project.customerName, label: `项目客户：${project.customerName}` })
+    if (currentUserName) options.push({ value: currentUserName, label: `录入人：${currentUserName}` })
+    for (const e of employeeOptions) options.push({ value: e.value, label: `技术人员：${e.label}` })
+
+    const seen = new Set<string>()
+    return options.filter((o) => {
+      const k = o.value.trim()
+      if (!k) return false
+      if (seen.has(k)) return false
+      seen.add(k)
+      return true
+    })
+  }, [projects, employeeOptions, currentUserName, form])
+
+  const customUpload = async (options: any) => {
+    const { file, onSuccess, onError } = options
+    const isImage = file.type?.startsWith('image/')
+    const isVideo = file.type?.startsWith('video/')
+    const maxSize = isImage ? 5 * 1024 * 1024 : 50 * 1024 * 1024
+
+    if (!isImage && !isVideo) {
+      message.error('仅支持图片或视频文件')
+      onError?.(new Error('unsupported file type'))
+      return
+    }
+    if (file.size > maxSize) {
+      message.error(`${isImage ? '图片' : '视频'}大小不能超过${isImage ? '5MB' : '50MB'}`)
+      onError?.(new Error('file too large'))
+      return
+    }
+
+    if (isVideo) {
+      const ok = await checkVideoDuration(file as File, 30)
+      if (!ok) {
+        message.error('视频时长不能超过30秒')
+        onError?.(new Error('video too long'))
+        return
+      }
+    }
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const uploadUrl = isImage ? '/uploads/installation-photos' : '/uploads/videos'
+      const res = await http.post(uploadUrl, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      onSuccess?.(res.data)
+      message.success('上传成功')
+    } catch (e: any) {
+      onError?.(e)
+      message.error(e?.response?.data?.message ?? '上传失败')
+    }
+  }
+
+  const fileListFromUrls = (urls?: string[]) =>
+    (urls || []).map<UploadFile>((url, idx) => ({
+      uid: `media-${idx}`,
+      name: `媒体${idx + 1}`,
+      status: 'done',
+      url,
+    }))
+
   const load = async () => {
     setLoading(true)
     try {
-      const [pRes, oRes, prodRes] = await Promise.all([
+      const [pRes, oRes, prodRes, empList, meRes] = await Promise.all([
         http.get<Project[]>('/projects'),
         http.get<CurtainOrder[]>('/curtain-orders'),
         http.get<Product[]>('/products'),
+        listEmployees().catch(() => [] as Employee[]),
+        http
+          .get<{ displayName?: string | null; email?: string | null }>('/users/me')
+          .catch(() => ({ data: {} as { displayName?: string | null; email?: string | null } })),
       ])
       setProjects(pRes.data ?? [])
       setRows(oRes.data ?? [])
       setProducts(prodRes.data ?? [])
+      setEmployees(empList ?? [])
+      setCurrentUserName(meRes.data.displayName?.trim() || meRes.data.email?.trim() || '')
     } catch (e: any) {
       message.error(e?.response?.data?.message ?? '加载失败')
     } finally {
@@ -277,6 +385,8 @@ export function CurtainOrdersPage() {
     form.setFieldsValue({
       roomCount: 1,
       deliveryToDoor: false,
+      deliveryMode: 'WAREHOUSE',
+      deliveryAddress: '送仓库',
       thirdPartyInstall: false,
       rooms: [{
         curtainType: CurtainType.STRAIGHT_TRACK,
@@ -329,6 +439,7 @@ export function CurtainOrdersPage() {
         roomCount: order.roomCount,
         deliveryToDoor: order.deliveryToDoor,
         receiverName: order.receiverName,
+        deliveryMode: order.deliveryToDoor ? undefined : (order.deliveryAddress === '送仓库' ? 'WAREHOUSE' : 'CUSTOM'),
         deliveryAddress: order.deliveryAddress,
         thirdPartyInstall: order.thirdPartyInstall,
         remark: order.remark,
@@ -377,6 +488,10 @@ export function CurtainOrdersPage() {
     const values = await form.validateFields()
     setSaving(true)
     try {
+      const deliveryToDoor = values.deliveryToDoor ?? false
+      const deliveryAddress =
+        deliveryToDoor ? values.deliveryAddress : (values.deliveryMode === 'WAREHOUSE' ? '送仓库' : values.deliveryAddress)
+
       if (editingId) {
         // 更新
         await http.patch(`/curtain-orders/${editingId}`, {
@@ -384,7 +499,7 @@ export function CurtainOrdersPage() {
           roomCount: values.roomCount,
           deliveryToDoor: values.deliveryToDoor ?? false,
           receiverName: values.receiverName,
-          deliveryAddress: values.deliveryAddress,
+          deliveryAddress,
           thirdPartyInstall: values.thirdPartyInstall ?? false,
           remark: values.remark,
           rooms: values.rooms?.map((r: RoomDetail) => ({
@@ -404,7 +519,7 @@ export function CurtainOrdersPage() {
           roomCount: values.roomCount,
           deliveryToDoor: values.deliveryToDoor ?? false,
           receiverName: values.receiverName,
-          deliveryAddress: values.deliveryAddress,
+          deliveryAddress,
           thirdPartyInstall: values.thirdPartyInstall ?? false,
           remark: values.remark,
           rooms: values.rooms?.map((r: RoomDetail) => ({
@@ -436,6 +551,7 @@ export function CurtainOrdersPage() {
     const hasCurtainBox = roomValue.hasCurtainBox
     const layerType = roomValue.layerType
     const withFabric = roomValue.withFabric
+    const mediaUrls: string[] | undefined = roomValue.mediaUrls
 
     return (
       <Card
@@ -705,8 +821,27 @@ export function CurtainOrdersPage() {
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item {...field} label="媒体 URL（每行一个）" name={[field.name, 'mediaUrls']}>
-              <Input.TextArea rows={2} placeholder="https://.../a.jpg" />
+            <Form.Item {...field} label="现场照片/视频（最多3张照片 + 1个30秒视频）" name={[field.name, 'mediaUrls']}>
+              <Upload
+                fileList={fileListFromUrls(mediaUrls)}
+                customRequest={customUpload}
+                accept="image/*,video/*"
+                multiple
+                listType="picture"
+                onChange={(info) => {
+                  const files = info.fileList
+                  const images = files.filter((f) => (f.type || '').startsWith('image/') || (f.url || '').match(/\.(jpg|jpeg|png|webp)$/i))
+                  const videos = files.filter((f) => (f.type || '').startsWith('video/') || (f.url || '').match(/\.(mp4|mov|webm)$/i))
+                  const next = [...images.slice(0, MAX_ROOM_IMAGES), ...videos.slice(0, MAX_ROOM_VIDEOS)]
+                  const urls = next
+                    .map((f) => (f as any).response?.url || f.url)
+                    .filter(Boolean)
+                  form.setFieldValue(['rooms', field.name, 'mediaUrls'], urls)
+                }}
+              >
+                <Button disabled={(mediaUrls?.length ?? 0) >= MAX_ROOM_IMAGES + MAX_ROOM_VIDEOS}>上传</Button>
+              </Upload>
+              <div style={{ fontSize: 12, color: '#999' }}>图片≤5MB；视频≤50MB 且≤30秒</div>
             </Form.Item>
           </Col>
         </Row>
@@ -827,19 +962,43 @@ export function CurtainOrdersPage() {
           <Form.Item shouldUpdate noStyle>
             {() => {
               const deliveryToDoor = !!form.getFieldValue('deliveryToDoor')
+              const deliveryMode = (form.getFieldValue('deliveryMode') as 'WAREHOUSE' | 'CUSTOM' | undefined) ?? 'WAREHOUSE'
               return (
                 <Row gutter={16}>
                   {deliveryToDoor ? (
                     <Col span={12}>
-                      <Form.Item label="货物接收人" name="receiverName" rules={[formRules.required('请输入接收人')]}>
-                        <Input placeholder="项目客户/技术人员/录入人" maxLength={INPUT_MAX_LENGTH.name} showCount />
+                      <Form.Item label="货物接收人" name="receiverName" rules={[formRules.required('请选择接收人')]}>
+                        <Select
+                          showSearch
+                          placeholder="选择接收人（项目客户/技术人员/录入人）"
+                          options={receiverOptions}
+                          optionFilterProp="label"
+                        />
                       </Form.Item>
                     </Col>
                   ) : (
                     <Col span={12}>
-                      <Form.Item label="送货地址/仓库" name="deliveryAddress" rules={[formRules.required('请输入送货地址')]}>
-                        <Input placeholder="例如：公司仓库 / 具体地址" maxLength={INPUT_MAX_LENGTH.description} showCount />
-                      </Form.Item>
+                      <Row gutter={12}>
+                        <Col span={10}>
+                          <Form.Item label="送货方式" name="deliveryMode" rules={[formRules.select('请选择')]}>
+                            <Select
+                              options={[
+                                { value: 'WAREHOUSE', label: '送仓库' },
+                                { value: 'CUSTOM', label: '手动地址' },
+                              ]}
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={14}>
+                          <Form.Item label={deliveryMode === 'WAREHOUSE' ? '仓库' : '地址'} name="deliveryAddress" rules={[formRules.required('请输入')]}>
+                            {deliveryMode === 'WAREHOUSE' ? (
+                              <Input value="送仓库" disabled />
+                            ) : (
+                              <Input placeholder="请输入送货地址" maxLength={INPUT_MAX_LENGTH.description} showCount />
+                            )}
+                          </Form.Item>
+                        </Col>
+                      </Row>
                     </Col>
                   )}
                   <Col span={12}>

@@ -6,6 +6,7 @@ import { TenantGuard } from '../common/guards/tenant.guard';
 import { RequirePermissions } from '../rbac/decorators/require-permissions.decorator';
 import { PermissionsGuard } from '../rbac/guards/permissions.guard';
 import { ListAlertsDto, RunProjectCompareDto } from './dto/alerts.dto';
+import { UpsertAlertRulesDto } from './dto/alert-rules.dto';
 import { AlertsService } from './alerts.service';
 
 @ApiTags('Alerts')
@@ -42,6 +43,20 @@ export class AlertsController {
   @ApiOperation({ summary: '运行所有预警检查（库存预警、折扣率预警、收款不足预警）' })
   async runAll() {
     return this.alerts.runAllAlerts();
+  }
+
+  @Get('rules')
+  @RequirePermissions('entries.manage')
+  @ApiOperation({ summary: '获取预警规则配置（AlertRule）' })
+  async listRules() {
+    return this.alerts.listRules();
+  }
+
+  @Post('rules')
+  @RequirePermissions('entries.manage')
+  @ApiOperation({ summary: '批量保存预警规则配置（upsert）' })
+  async upsertRules(@Body() dto: UpsertAlertRulesDto) {
+    return this.alerts.upsertRules(dto.rules);
   }
 
   @Patch(':id/resolve')

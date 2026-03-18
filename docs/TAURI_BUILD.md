@@ -1,6 +1,6 @@
 # Tauri 桌面应用打包指南
 
-> **当前版本：v1.1.5** | **最后更新：2026-03-17**
+> **当前版本：v1.1.7** | **最后更新：2026-03-18**
 
 本文档详细说明如何打包智能家居 SaaS 管理系统的桌面应用，支持 Windows、macOS 和 Linux。
 
@@ -23,15 +23,15 @@ npm run tauri:build
 ```
 bundle/
 ├── nsis/          # Windows NSIS 安装包
-│   └── SmartHome_1.1.5_x64-setup.exe
+│   └── SmartHome_1.1.7_x64-setup.exe
 ├── macos/         # macOS App
 │   └── SmartHome.app
 ├── dmg/           # macOS DMG 安装包
-│   └── SmartHome_1.1.5_aarch64.dmg
+│   └── SmartHome_1.1.7_aarch64.dmg
 ├── deb/           # Linux DEB 包
-│   └── SmartHome_1.1.5_amd64.deb
+│   └── SmartHome_1.1.7_amd64.deb
 └── appimage/      # Linux AppImage
-    └── SmartHome_1.1.5_amd64.AppImage
+    └── SmartHome_1.1.7_amd64.AppImage
 ```
 
 ### 为什么不同平台/格式体积差异很大？
@@ -58,7 +58,7 @@ bundle/
 ## 系统要求
 
 ### 通用要求
-- **Node.js**: 20+ (推荐 v22)
+- **Node.js**: 20+（本项目 CI 使用 v24，推荐本地也用 v24）
 - **npm**: 10+
 - **Rust**: 1.77.2+
 - **磁盘空间**: 至少 5GB
@@ -230,12 +230,12 @@ jobs:
 ```bash
 # 提交所有更改
 git add .
-git commit -m "release: v1.1.3 桌面应用打包优化"
+git commit -m "release: v1.1.6"
 
 # 打 tag（会自动触发 GitHub Actions）
-git tag v1.1.3
+git tag v1.1.6
 git push origin main
-git push origin v1.1.3
+git push origin v1.1.6
 ```
 
 ### 4. 验证构建结果

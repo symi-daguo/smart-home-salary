@@ -14,6 +14,8 @@ import {
   Table,
   Tabs,
   Tag,
+  Upload,
+  Image,
   message,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
@@ -40,6 +42,8 @@ import type { Employee } from '../api/employees'
 import { listEmployees } from '../api/employees'
 import { PageHeader } from '../components/PageHeader'
 import { formRules, MODAL_WIDTH, INPUT_MAX_LENGTH, PLACEHOLDER } from '../utils/formRules'
+import type { UploadFile } from 'antd/es/upload/interface'
+import { http } from '../api/http'
 
 type ItemRow = {
   id: string
@@ -48,6 +52,13 @@ type ItemRow = {
   snCodes: string[]
   unitPrice?: number
   remark?: string
+}
+
+function parseSnInput(raw: string) {
+  return raw
+    .split(/[\s,，;；]+/g)
+    .map((x) => x.trim())
+    .filter(Boolean)
 }
 
 const OUTBOUND_TYPES: WarehouseOrderType[] = [
@@ -77,6 +88,7 @@ export function WarehouseOrdersPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'outbound' | 'inbound'>('all')
   const [editing, setEditing] = useState<WarehouseOrder | null>(null)
   const [items, setItems] = useState<ItemRow[]>([])
+  const [imageList, setImageList] = useState<UploadFile[]>([])
   const [filterForm] = Form.useForm()
 
   const productOptions = useMemo(
@@ -233,11 +245,20 @@ export function WarehouseOrdersPage() {
                 orderType: r.orderType,
                 projectId: r.projectId,
                 relatedOrderId: r.relatedOrderId,
+                relatedOrderIds: r.relatedOrderIds,
                 occurredAt: r.occurredAt ? dayjs(r.occurredAt) : undefined,
                 paymentType: r.paymentType,
                 expressNo: r.expressNo,
                 remark: r.remark,
               })
+              setImageList(
+                (r.images || []).map((url, idx) => ({
+                  uid: `img-${idx}`,
+                  name: `图片${idx + 1}`,
+                  status: 'done',
+                  url,
+                })),
+              )
               setItems(
                 r.items.map((it) => ({
                   id: it.id,
@@ -333,7 +354,24 @@ export function WarehouseOrdersPage() {
     form.resetFields()
     form.setFieldsValue({ orderType, occurredAt: dayjs() })
     setItems([{ id: `${Date.now()}`, productId: '', quantity: 1, snCodes: [], remark: '' }])
+    setImageList([])
     setOpen(true)
+  }
+
+  const customUpload = async (options: any) => {
+    const { file, onSuccess, onError } = options
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await http.post('/uploads/warehouse-images', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      onSuccess?.(res.data)
+      message.success('上传成功')
+    } catch (e: any) {
+      onError?.(e)
+      message.error(e?.response?.data?.message ?? '上传失败')
+    }
   }
 
   const handleSubmit = async () => {
@@ -342,6 +380,12 @@ export function WarehouseOrdersPage() {
     if (!validItems.length) {
       message.error('请至少添加一个产品')
       return
+    }
+    for (const it of validItems) {
+      if (it.snCodes.length > 0 && it.snCodes.length !== it.quantity) {
+        message.error('SN码数量必须与出入库数量一致')
+        return
+      }
     }
 
     setSaving(true)
@@ -352,13 +396,19 @@ export function WarehouseOrdersPage() {
         return
       }
 
+      const images = imageList
+        .map((f) => (f as any).response?.url || f.url)
+        .filter(Boolean)
+
       const payload = {
         orderType: values.orderType,
         projectId: values.projectId,
         relatedOrderId: values.relatedOrderId,
+        relatedOrderIds: values.relatedOrderIds,
         occurredAt: values.occurredAt?.toISOString(),
         paymentType: values.paymentType,
         expressNo: values.expressNo,
+        images: images.length ? images : undefined,
         remark: values.remark,
         items: validItems.map((it) => ({
           productId: it.productId,
@@ -538,6 +588,18 @@ export function WarehouseOrdersPage() {
 
           <Row gutter={16}>
             <Col span={12}>
+              <Form.Item label="关联出入库单（可多选）" name="relatedOrderIds">
+                <Select
+                  mode="multiple"
+                  allowClear
+                  showSearch
+                  placeholder="选择关联单据（可多选）"
+                  options={rows.map((o) => ({ value: o.id, label: `${o.orderNo}（${WAREHOUSE_ORDER_TYPE_LABELS[o.orderType] ?? o.orderType}）` }))}
+                  optionFilterProp="label"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
               <Form.Item label="快递单号" name="expressNo">
                 <Input placeholder="请输入快递单号" maxLength={INPUT_MAX_LENGTH.code} showCount />
               </Form.Item>
@@ -548,6 +610,29 @@ export function WarehouseOrdersPage() {
               </Form.Item>
             </Col>
           </Row>
+
+          <Form.Item label="出入库图片（最多 3 张）">
+            <div style={{ padding: 12, background: '#fafafa', borderRadius: 8, border: '1px dashed #d9d9d9' }}>
+              <Upload
+                fileList={imageList}
+                listType="picture-card"
+                accept="image/*"
+                customRequest={customUpload}
+                onChange={(info) => setImageList(info.fileList.slice(0, 3))}
+                onPreview={(file) => {
+                  const url = (file as any).url || (file as any).response?.url
+                  if (!url) return
+                  Modal.info({
+                    title: file.name,
+                    content: <Image src={url} style={{ width: '100%' }} />,
+                    width: 800,
+                  })
+                }}
+              >
+                {imageList.length >= 3 ? null : <div>上传</div>}
+              </Upload>
+            </div>
+          </Form.Item>
 
           <div style={{ height: 8 }} />
           <Row justify="space-between" align="middle">
@@ -602,11 +687,39 @@ export function WarehouseOrdersPage() {
                 dataIndex: 'snCodes',
                 width: 200,
                 render: (v: string[], r: ItemRow) => (
-                  <Input
-                    value={v.join(',')}
-                    placeholder="SN001,SN002"
-                    onChange={(e) => updateItem(r.id, { snCodes: e.target.value.split(',').filter(Boolean) })}
-                  />
+                  <Space.Compact style={{ width: '100%' }}>
+                    <Input
+                      value={v.join(',')}
+                      placeholder="SN001,SN002 或粘贴多行"
+                      onChange={(e) => updateItem(r.id, { snCodes: parseSnInput(e.target.value) })}
+                      status={v.length > 0 && v.length !== r.quantity ? 'error' : undefined}
+                    />
+                    <Button
+                      onClick={() => {
+                        let val = ''
+                        Modal.confirm({
+                          title: '批量导入 SN',
+                          content: (
+                            <Input.TextArea
+                              rows={8}
+                              placeholder="每行一个SN，或用逗号/空格分隔"
+                              onChange={(e) => {
+                                val = e.target.value
+                              }}
+                            />
+                          ),
+                          okText: '导入',
+                          cancelText: '取消',
+                          onOk: () => {
+                            const sns = parseSnInput(val)
+                            updateItem(r.id, { snCodes: sns })
+                          },
+                        })
+                      }}
+                    >
+                      导入
+                    </Button>
+                  </Space.Compact>
                 ),
               },
               {

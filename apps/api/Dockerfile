@@ -23,4 +23,4 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && if [ \"${NODE_ENV}\" = \"development\" ]; then npm run seed:testdata; fi && node dist/main.js"]

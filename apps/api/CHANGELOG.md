@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.7] - 2026-03-18
+
+### Added
+- 预警：新增预警规则配置接口（AlertRule），支持阈值/开关配置并在服务端生效
+- 仓库：出入库单支持图片上传字段、关联单据多选链路
+- 仓库：SN 码数量与出入库数量一致性强校验（避免单据与 SN 不一致）
+- Docker（dev）：启动自动注入演示数据（seed:testdata），保证页面有数据可展示
+
 ## [1.1.5] - 2026-03-17
 
 ### Added

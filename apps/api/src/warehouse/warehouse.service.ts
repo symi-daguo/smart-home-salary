@@ -284,6 +284,9 @@ export class WarehouseService {
 
     if (!isInbound && dto.items) {
       for (const item of dto.items) {
+        if (item.snCodes && item.snCodes.length > 0 && item.snCodes.length !== item.quantity) {
+          throw new BadRequestException('SN码数量必须与出入库数量一致')
+        }
         const inventory = await this.prisma.inventory.findUnique({
           where: { productId: item.productId },
         })
@@ -307,6 +310,13 @@ export class WarehouseService {
     const orderNo = await this.generateOrderNo(tenantId, prefixMap[dto.orderType] || 'CK')
 
     const result = await this.prisma.$transaction(async (tx) => {
+      const relatedOrderIds =
+        dto.relatedOrderIds && dto.relatedOrderIds.length > 0
+          ? dto.relatedOrderIds
+          : dto.relatedOrderId
+            ? [dto.relatedOrderId]
+            : []
+
       const order = await tx.warehouseOrder.create({
         data: {
           tenantId,
@@ -314,6 +324,7 @@ export class WarehouseService {
           orderType: dto.orderType as any,
           projectId: dto.projectId,
           relatedOrderId: dto.relatedOrderId,
+          relatedOrderIds: relatedOrderIds.length ? JSON.stringify(relatedOrderIds) : undefined,
           occurredAt: dto.occurredAt ? new Date(dto.occurredAt) : new Date(),
           paymentType: dto.paymentType as any,
           expressNo: dto.expressNo,
@@ -335,6 +346,9 @@ export class WarehouseService {
       })
 
       for (const item of dto.items || []) {
+        if (item.snCodes && item.snCodes.length > 0 && item.snCodes.length !== item.quantity) {
+          throw new BadRequestException('SN码数量必须与出入库数量一致')
+        }
         const existing = await tx.inventory.findUnique({
           where: { productId: item.productId },
         })
@@ -427,11 +441,26 @@ export class WarehouseService {
     const order = await this.getWarehouseOrder(tenantId, id)
 
     const result = await this.prisma.$transaction(async (tx) => {
+      if (dto.items) {
+        for (const item of dto.items) {
+          if (item.snCodes && item.snCodes.length > 0 && item.snCodes.length !== item.quantity) {
+            throw new BadRequestException('SN码数量必须与出入库数量一致')
+          }
+        }
+      }
+      const relatedOrderIds =
+        dto.relatedOrderIds && dto.relatedOrderIds.length > 0
+          ? dto.relatedOrderIds
+          : dto.relatedOrderId
+            ? [dto.relatedOrderId]
+            : []
+
       const updated = await tx.warehouseOrder.update({
         where: { id },
         data: {
           projectId: dto.projectId,
           relatedOrderId: dto.relatedOrderId,
+          relatedOrderIds: relatedOrderIds.length ? JSON.stringify(relatedOrderIds) : undefined,
           occurredAt: dto.occurredAt ? new Date(dto.occurredAt) : undefined,
           paymentType: dto.paymentType as any,
           expressNo: dto.expressNo,
@@ -460,7 +489,7 @@ export class WarehouseService {
           orderId: id,
           operatorId,
           action: 'UPDATE',
-          changes: dto as any,
+          changes: this.buildWarehouseOrderDiff(order as any, dto),
         },
       })
 
@@ -468,6 +497,27 @@ export class WarehouseService {
     })
 
     return result
+  }
+
+  private buildWarehouseOrderDiff(before: any, dto: UpdateWarehouseOrderDto) {
+    const diff: any = {}
+    const set = (k: string, from: any, to: any) => {
+      if (to === undefined) return
+      const a = JSON.stringify(from ?? null)
+      const b = JSON.stringify(to ?? null)
+      if (a !== b) diff[k] = { from, to }
+    }
+
+    set('projectId', before.projectId, dto.projectId)
+    set('relatedOrderId', before.relatedOrderId, dto.relatedOrderId)
+    set('relatedOrderIds', before.relatedOrderIds, dto.relatedOrderIds)
+    set('occurredAt', before.occurredAt, dto.occurredAt)
+    set('paymentType', before.paymentType, dto.paymentType)
+    set('expressNo', before.expressNo, dto.expressNo)
+    set('images', before.images, dto.images)
+    set('remark', before.remark, dto.remark)
+    if (dto.items) diff.items = { from: before.items, to: dto.items }
+    return diff
   }
 
   async deleteWarehouseOrder(tenantId: string, operatorId: string, id: string) {

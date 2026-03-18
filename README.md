@@ -1,6 +1,6 @@
 # 智能家居行业SaaS管理系统
 
-[![Version](https://img.shields.io/badge/version-v1.1.6-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
+[![Version](https://img.shields.io/badge/version-v1.1.7-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml/badge.svg)](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml)
 
@@ -22,12 +22,20 @@
 
 ```bash
 git clone https://github.com/symi-daguo/smart-home-salary.git
-cd smart-home-salary/infra && docker compose up -d
+cd smart-home-salary/infra && docker compose up -d --build
 ```
 
 访问地址：
 - Web界面: http://localhost:5173
 - API文档: http://localhost:3000/docs
+- 健康检查: http://localhost:3000/api/health
+
+发布前验证（推荐一键脚本）：
+
+```bash
+chmod +x infra/verify/verify.sh
+./infra/verify/verify.sh
+```
 
 ### 生产环境安全提示（务必阅读）
 
@@ -99,6 +107,11 @@ smarthome/
 
 ## 📝 版本历史
 
+### v1.1.7 (2026-03-18)
+- 需求确认：窗帘下单补齐送货上门接收人候选、送仓库/手动地址分支、房间媒体上传（图片≤3、视频≤30秒）
+- 需求确认：仓库出入库单补齐图片上传、关联单据多选、SN 码批量导入与数量一致校验（后端强校验）
+- 预警中心：新增规则配置接口与页面开关/阈值配置（AlertRule）
+
 ### v1.1.6 (2026-03-17)
 - 工资结算：支持手动修正工资数据（底薪、提成、技术费、补贴、扣款）
 - 工资结算：新增按员工筛选功能，可选择查看特定员工的工资记录
@@ -106,40 +119,11 @@ smarthome/
 - 数据备份：备份功能健全，包含Postgres pg_dump和MinIO bucket镜像
 - 数据备份：支持定时备份和自动清理旧备份，恢复脚本完整
 
-### v1.1.5 (2026-03-17)
-- 安全：Tauri 启用 CSP（不再使用 `csp: null`），收敛攻击面
-- 安全：移除不必要的 Shell 插件与过宽权限（不再允许任意 `execute/spawn/kill`）
-- Windows：安装后“无反应”场景增强可定位性（启动失败弹窗 + 写入日志）
-- 仓库：出入库单支持作废/冲销（生成冲销单，库存可追溯）
-- 仓库：库存盘点支持“创建盘点单 → 审核生成调整单”
-- 仓库：新增 SN 码流转追踪接口（按 SN 查询申请单/出入库单链路）
-
-### v1.1.4 (2026-03-17)
-- Windows：启动失败弹窗提示 + 写入日志文件（便于定位“安装后无反应”）
-- 文档：客户友好化（下载统一指向 Releases latest，压缩 1.0.x 历史）
-
-### v1.1.3 (2026-03-17)
-- Windows：NSIS 安装包离线集成 WebView2 Runtime，修复“安装后无法启动”
-- 桌面版：Release 构建启用日志输出，便于定位启动问题
-
-### v1.1.2 (2026-03-17)
-- 修复 OpenClaw 接口租户/用户上下文与权限保护
-- 修复仓库日志 operator 口径（按员工档案记录）
-- Prisma：增加租户维度唯一约束（库存、出库申请单号、出入库单号）
-- 前端：侧边栏版本号改为构建注入动态展示
-
-### v1.1.1 (2026-03-17)
-- 修复 GitHub Actions 构建失败问题
-
-### v1.1.0 (2026-03-17)
-- 新增 GitHub Actions 自动化跨平台打包
-- 优化 README.md 文档结构
-- 完善 Windows/macOS/Linux 安装包
-
-### v1.0.0 - v1.0.9（阶段汇总）
-- 完成核心业务能力：组织架构、项目、业务上报、工资、仓库、预警、看板等模块
-- 引入多租户与权限体系（租户隔离、RBAC）、审计日志与基础运维能力
-- 桌面端：引入 Tauri 打包与本地数据存储（SQLite），完善跨平台发布链路
+### v1.0.0 - v1.1.5（阶段汇总）
+- 业务闭环：组织架构、项目管理、销售/技术上报、工资结算、仓库管理、预警中心、数据看板等核心模块
+- 平台能力：多租户隔离（tenantId）、RBAC 权限、审计/日志、Docker 一键部署
+- 桌面端：Tauri 跨平台打包链路（Windows NSIS / macOS DMG / Linux AppImage），并增强 Windows 启动失败可定位性
+- 仓库：出入库单、库存盘点、SN 追踪、作废/冲销机制等
 
 [查看完整版本历史](apps/api/CHANGELOG.md)
 
