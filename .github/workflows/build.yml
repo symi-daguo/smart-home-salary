@@ -59,6 +59,27 @@ jobs:
       - name: Install dependencies (npm workspaces)
         run: npm install
 
+      - name: Build API and prepare B resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p src-tauri/resources/api src-tauri/resources/binaries
+
+          # 1) Build API
+          npm --workspace apps/api run build
+
+          # 2) Generate SQLite seed DB (for offline desktop mode)
+          export DATABASE_URL="file:$(pwd)/apps/api/prisma/desktop-seed.db"
+          npm --workspace apps/api run prisma:dbpush:sqlite
+          npm --workspace apps/api run prisma:generate:sqlite
+          npm --workspace apps/api run seed:desktop || echo "Seed skipped"
+          cp -f apps/api/prisma/desktop-seed.db src-tauri/resources/binaries/seed.db || echo "No seed db"
+
+          # 3) Copy API source code (without node_modules and dist)
+          rm -rf src-tauri/resources/api/*
+          rsync -av --exclude='node_modules' --exclude='dist' --exclude='*.db' \
+            apps/api/ src-tauri/resources/api/
+
       - name: Build frontend (apps/web)
         run: npm --workspace apps/web run build
 
