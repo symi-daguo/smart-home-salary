@@ -6,11 +6,6 @@ on:
       - 'v*'
   workflow_dispatch:
 
-# 提前切换 GitHub Actions JS runtime 到 Node.js 24
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
-# 设置 GITHUB_TOKEN 的权限，允许创建 Release
 permissions:
   contents: write
 
@@ -65,12 +60,13 @@ jobs:
           set -euo pipefail
 
           WORKSPACE="${{ github.workspace }}"
+          API_DIR="$WORKSPACE/apps/api"
 
           mkdir -p "$WORKSPACE/src-tauri/resources/api"
           mkdir -p "$WORKSPACE/src-tauri/resources/binaries"
 
-          # Create .env file for Prisma (normally gitignored)
-          cd "$WORKSPACE/apps/api"
+          cd "$API_DIR"
+
           cat > .env << 'EOF'
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/salary"
 REDIS_HOST="localhost"
@@ -86,40 +82,35 @@ S3_BUCKET="salary-uploads"
 S3_PUBLIC_BASE_URL="http://localhost:9000/salary-uploads"
 EOF
 
-          # 0) Generate Prisma Client for PostgreSQL (required for API build)
           echo "Generating Prisma Client..."
-          npm run prisma:generate
+          npx prisma generate
 
-          # 1) Build API
           echo "Building API..."
-          npm --workspace apps/api run build
+          npm run build
 
-          # 2) Generate SQLite seed DB (for offline desktop mode)
-          echo "Generating SQLite seed DB..."
-          rm -f "$WORKSPACE/apps/api/prisma/desktop-seed.db" "$WORKSPACE/apps/api/prisma/data.db"
-          export DATABASE_URL="file:./desktop-seed.db"
-          npm run prisma:dbpush:sqlite
-          npm run seed:desktop || echo "Seed skipped"
-          cp -f "$WORKSPACE/apps/api/desktop-seed.db" "$WORKSPACE/src-tauri/resources/binaries/seed.db" 2>/dev/null || cp -f "$WORKSPACE/apps/api/prisma/desktop-seed.db" "$WORKSPACE/src-tauri/resources/binaries/seed.db" || echo "No seed db"
+          echo "Creating SQLite seed database for offline mode..."
+          cd "$API_DIR"
+          rm -f prisma/desktop-seed.db
+          cp prisma/schema.sqlite.prisma prisma/schema.temp.prisma
+          export DATABASE_URL="file:./prisma/desktop-seed.db"
+          npx prisma db push --schema prisma/schema.temp.prisma --skip-generate
+          rm -f prisma/schema.temp.prisma
+          cp -f "$API_DIR/prisma/desktop-seed.db" "$WORKSPACE/src-tauri/resources/binaries/seed.db" 2>/dev/null || echo "No seed db found"
 
-          # 3) Copy API source code (without node_modules)
-          echo "Copying API source code..."
-          cd "$WORKSPACE"
-          rm -rf "$WORKSPACE/src-tauri/resources/api/"*
+          echo "Copying API to resources..."
+          mkdir -p "$WORKSPACE/src-tauri/resources/api"
+          cp -r "$API_DIR/dist" "$WORKSPACE/src-tauri/resources/api/" || true
+          cp -r "$API_DIR/src" "$WORKSPACE/src-tauri/resources/api/" || true
+          cp -r "$API_DIR/prisma" "$WORKSPACE/src-tauri/resources/api/" || true
+          cp "$API_DIR/package.json" "$WORKSPACE/src-tauri/resources/api/" || true
+          cp "$API_DIR/package-lock.json" "$WORKSPACE/src-tauri/resources/api/" || true
+          cp "$API_DIR/tsconfig.json" "$WORKSPACE/src-tauri/resources/api/" || true
+          cp "$API_DIR/nest-cli.json" "$WORKSPACE/src-tauri/resources/api/" || true
+          cp "$API_DIR/.env" "$WORKSPACE/src-tauri/resources/api/" || true
 
-          # Copy all files except node_modules
-          cp -r apps/api/dist "$WORKSPACE/src-tauri/resources/api/" 2>/dev/null || true
-          cp -r apps/api/src "$WORKSPACE/src-tauri/resources/api/" 2>/dev/null || true
-          cp -r apps/api/prisma "$WORKSPACE/src-tauri/resources/api/" 2>/dev/null || true
-          cp apps/api/package.json "$WORKSPACE/src-tauri/resources/api/" 2>/dev/null || true
-          cp apps/api/package-lock.json "$WORKSPACE/src-tauri/resources/api/" 2>/dev/null || true
-          cp apps/api/tsconfig.json "$WORKSPACE/src-tauri/resources/api/" 2>/dev/null || true
-          cp apps/api/nest-cli.json "$WORKSPACE/src-tauri/resources/api/" 2>/dev/null || true
-
-          # Verify resources
-          echo "Resources prepared:"
-          ls -la "$WORKSPACE/src-tauri/resources/api/" 2>/dev/null || echo "API dir empty"
-          ls -la "$WORKSPACE/src-tauri/resources/binaries/" 2>/dev/null || echo "Binaries dir empty"
+          echo "Resources prepared successfully"
+          ls -la "$WORKSPACE/src-tauri/resources/api/" || echo "API dir empty"
+          ls -la "$WORKSPACE/src-tauri/resources/binaries/" || echo "Binaries dir empty"
 
       - name: Build frontend (apps/web)
         run: npm --workspace apps/web run build
