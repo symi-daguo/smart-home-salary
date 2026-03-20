@@ -1,6 +1,6 @@
 # Tauri 桌面应用打包指南
 
-> **当前版本：v1.1.8** | **最后更新：2026-03-18**
+> **当前版本：v1.1.9** | **最后更新：2026-03-20**
 
 本文档详细说明如何打包智能家居 SaaS 管理系统的桌面应用，支持 Windows、macOS 和 Linux。
 
@@ -23,7 +23,7 @@ npm run tauri:build
 ```
 bundle/
 ├── nsis/          # Windows NSIS 安装包
-│   └── SmartHome_1.1.8_x64-setup.exe
+│   └── SmartHome_1.1.9_x64-setup.exe
 ├── macos/         # macOS App
 │   └── SmartHome.app
 ├── dmg/           # macOS DMG 安装包
@@ -478,6 +478,8 @@ npm run tauri:build
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| 1.1.9 | 2026-03-20 | 修复 GitHub Actions YAML 语法错误，简化 B 方案资源准备流程 |
+| 1.1.8 | 2026-03-18 | 修复代码格式，统一 Node 版本为 >=20.0.0 |
 | 1.1.3 | 2026-03-17 | 修复 Windows 安装后无法启动（离线集成 WebView2），Release 启用日志 |
 | 1.1.2 | 2026-03-17 | 修复 GitHub Actions 权限、Windows 打包配置、Rust 警告 |
 | 1.1.1 | 2026-03-17 | GitHub Actions 构建修复 |
