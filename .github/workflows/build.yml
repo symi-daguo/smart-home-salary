@@ -69,10 +69,25 @@ jobs:
           mkdir -p "$WORKSPACE/src-tauri/resources/api"
           mkdir -p "$WORKSPACE/src-tauri/resources/binaries"
 
+          # Create .env file for Prisma (normally gitignored)
+          cd "$WORKSPACE/apps/api"
+          cat > .env << 'EOF'
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/salary"
+REDIS_HOST="localhost"
+REDIS_PORT="6379"
+JWT_ACCESS_SECRET="dev-access-secret-change-in-production"
+JWT_REFRESH_SECRET="dev-refresh-secret-change-in-production"
+FRONTEND_URL="http://localhost:5173"
+S3_ENDPOINT="http://localhost:9000"
+S3_REGION="us-east-1"
+S3_ACCESS_KEY_ID="minioadmin"
+S3_SECRET_ACCESS_KEY="minioadmin"
+S3_BUCKET="salary-uploads"
+S3_PUBLIC_BASE_URL="http://localhost:9000/salary-uploads"
+EOF
+
           # 0) Generate Prisma Client for PostgreSQL (required for API build)
           echo "Generating Prisma Client..."
-          cd "$WORKSPACE/apps/api"
-          export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/salary"
           npm run prisma:generate
 
           # 1) Build API
@@ -82,7 +97,6 @@ jobs:
           # 2) Generate SQLite seed DB (for offline desktop mode)
           echo "Generating SQLite seed DB..."
           rm -f "$WORKSPACE/apps/api/prisma/desktop-seed.db" "$WORKSPACE/apps/api/prisma/data.db"
-          cd "$WORKSPACE/apps/api"
           export DATABASE_URL="file:./desktop-seed.db"
           npm run prisma:dbpush:sqlite
           npm run seed:desktop || echo "Seed skipped"
