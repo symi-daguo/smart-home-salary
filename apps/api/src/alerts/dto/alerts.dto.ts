@@ -20,9 +20,10 @@ export class ListAlertsDto {
 }
 
 export class RunProjectCompareDto {
-  @ApiPropertyOptional({ description: '项目ID；不传则对当前租户所有项目运行一次（MVP 先支持单项目）' })
+  @ApiPropertyOptional({
+    description: '项目ID；不传则对当前租户所有项目运行一次（MVP 先支持单项目）',
+  })
   @IsOptional()
   @IsString()
   projectId?: string;
 }
-

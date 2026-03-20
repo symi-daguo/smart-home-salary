@@ -66,4 +66,3 @@ export class AlertsController {
     return this.alerts.resolve(id);
   }
 }
-

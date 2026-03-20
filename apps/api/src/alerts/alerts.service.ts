@@ -1,5 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { AlertCondition, AlertSeverity, AlertType, ProductStatus, ProjectStatus } from '@prisma/client';
+import {
+  AlertCondition,
+  AlertSeverity,
+  AlertType,
+  ProductStatus,
+  ProjectStatus,
+} from '@prisma/client';
 import { PrismaService } from '../common/prisma.service';
 
 type CompareBreakdownItem = {
@@ -154,7 +160,8 @@ export class AlertsService {
     });
 
     const salesMap = new Map<string, number>();
-    for (const it of salesItems) salesMap.set(it.productId, (salesMap.get(it.productId) ?? 0) + it.quantity);
+    for (const it of salesItems)
+      salesMap.set(it.productId, (salesMap.get(it.productId) ?? 0) + it.quantity);
 
     const installMap = new Map<string, number>();
     for (const it of installItems)
@@ -277,8 +284,7 @@ export class AlertsService {
         (sum, order) =>
           sum +
           order.items.reduce(
-            (itemSum, item) =>
-              itemSum + toNumber(item.product?.standardPrice) * item.quantity,
+            (itemSum, item) => itemSum + toNumber(item.product?.standardPrice) * item.quantity,
             0,
           ),
         0,
@@ -404,4 +410,3 @@ export class AlertsService {
     };
   }
 }
-

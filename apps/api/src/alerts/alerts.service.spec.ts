@@ -11,14 +11,10 @@ describe('AlertsService', () => {
         findFirst: jest.fn().mockResolvedValue({ id: 'p1', name: '项目A' }),
       },
       salesOrderItem: {
-        findMany: jest.fn().mockResolvedValue([
-          { productId: 'prd1', quantity: 10 },
-        ]),
+        findMany: jest.fn().mockResolvedValue([{ productId: 'prd1', quantity: 10 }]),
       },
       installationRecord: {
-        findMany: jest.fn().mockResolvedValue([
-          { productId: 'prd1', quantity: 9 },
-        ]),
+        findMany: jest.fn().mockResolvedValue([{ productId: 'prd1', quantity: 9 }]),
       },
       alert: {
         create: jest.fn().mockResolvedValue({ id: 'a1' }),
@@ -42,8 +38,12 @@ describe('AlertsService', () => {
       getTenantWhere: (where: any = {}) => ({ ...where, tenantId }),
       getTenantData: (data: any) => ({ ...data, tenantId }),
       project: { findFirst: jest.fn().mockResolvedValue({ id: 'p1', name: '项目A' }) },
-      salesOrderItem: { findMany: jest.fn().mockResolvedValue([{ productId: 'prd1', quantity: 100 }]) },
-      installationRecord: { findMany: jest.fn().mockResolvedValue([{ productId: 'prd1', quantity: 97 }]) },
+      salesOrderItem: {
+        findMany: jest.fn().mockResolvedValue([{ productId: 'prd1', quantity: 100 }]),
+      },
+      installationRecord: {
+        findMany: jest.fn().mockResolvedValue([{ productId: 'prd1', quantity: 97 }]),
+      },
       alert: { create: jest.fn().mockResolvedValue({ id: 'a1' }) },
     };
     const svc = new AlertsService(prisma);
@@ -59,8 +59,12 @@ describe('AlertsService', () => {
       getTenantWhere: (where: any = {}) => ({ ...where, tenantId }),
       getTenantData: (data: any) => ({ ...data, tenantId }),
       project: { findFirst: jest.fn().mockResolvedValue({ id: 'p1', name: '项目A' }) },
-      salesOrderItem: { findMany: jest.fn().mockResolvedValue([{ productId: 'prd1', quantity: 100 }]) },
-      installationRecord: { findMany: jest.fn().mockResolvedValue([{ productId: 'prd1', quantity: 99 }]) },
+      salesOrderItem: {
+        findMany: jest.fn().mockResolvedValue([{ productId: 'prd1', quantity: 100 }]),
+      },
+      installationRecord: {
+        findMany: jest.fn().mockResolvedValue([{ productId: 'prd1', quantity: 99 }]),
+      },
       alert: { create: jest.fn().mockResolvedValue({ id: 'a1' }) },
     };
     const svc = new AlertsService(prisma);
@@ -69,4 +73,3 @@ describe('AlertsService', () => {
     expect(res.severity).toBe(AlertSeverity.INFO);
   });
 });
-

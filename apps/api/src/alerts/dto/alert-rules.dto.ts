@@ -26,4 +26,3 @@ export class UpsertAlertRulesDto {
   @Type(() => AlertRuleItemDto)
   rules!: AlertRuleItemDto[];
 }
-

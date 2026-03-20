@@ -9,4 +9,3 @@ import { AlertsService } from './alerts.service';
   providers: [AlertsService],
 })
 export class AlertsModule {}
-
