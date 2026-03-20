@@ -51,7 +51,6 @@ async function main() {
   });
 
   await prisma.employeeType.createMany({
-    skipDuplicates: true,
     data: [
       { tenantId: tenant.id, key: 'member', name: '员工', skillTags: 'member' },
       { tenantId: tenant.id, key: 'admin', name: '管理员', skillTags: 'admin,guide' },
@@ -61,7 +60,6 @@ async function main() {
   });
 
   await prisma.position.createMany({
-    skipDuplicates: true,
     data: [
       {
         tenantId: tenant.id,
