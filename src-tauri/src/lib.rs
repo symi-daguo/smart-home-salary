@@ -129,19 +129,19 @@ fn start_api(app_handle: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Er
 
 fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
     std::fs::create_dir_all(dst)?;
-    
+
     for entry in std::fs::read_dir(src)? {
         let entry = entry?;
         let ty = entry.file_type()?;
-        
+
         if ty.is_dir() {
-            if entry.file_name() != "node_modules" && entry.file_name() != "dist" {
+            if entry.file_name() != "node_modules" {
                 copy_dir_all(&entry.path(), &dst.join(entry.file_name()))?;
             }
         } else {
             std::fs::copy(entry.path(), dst.join(entry.file_name()))?;
         }
     }
-    
+
     Ok(())
 }
