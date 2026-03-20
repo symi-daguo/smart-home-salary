@@ -72,6 +72,7 @@ jobs:
           # 0) Generate Prisma Client for PostgreSQL (required for API build)
           echo "Generating Prisma Client..."
           cd "$WORKSPACE/apps/api"
+          export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/salary"
           npm run prisma:generate
 
           # 1) Build API
