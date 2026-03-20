@@ -94,7 +94,7 @@ model AuditLog {
   action    String
   entity    String
   entityId  String
-  metadata  String?
+  metadata  Json?
   tenantId  String
   userId    String?
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
@@ -567,7 +567,7 @@ model Alert {
   severity   AlertSeverity @default(INFO)
   title      String
   message    String
-  metadata   String?
+  metadata   Json?
   resolvedAt DateTime?
   createdAt  DateTime      @default(now())
 
