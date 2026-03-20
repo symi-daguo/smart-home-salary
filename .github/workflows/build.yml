@@ -67,20 +67,20 @@ jobs:
 
           cd "$API_DIR"
 
-          cat > .env << 'EOF'
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/salary"
-REDIS_HOST="localhost"
-REDIS_PORT="6379"
-JWT_ACCESS_SECRET="dev-access-secret-change-in-production"
-JWT_REFRESH_SECRET="dev-refresh-secret-change-in-production"
-FRONTEND_URL="http://localhost:5173"
-S3_ENDPOINT="http://localhost:9000"
-S3_REGION="us-east-1"
-S3_ACCESS_KEY_ID="minioadmin"
-S3_SECRET_ACCESS_KEY="minioadmin"
-S3_BUCKET="salary-uploads"
-S3_PUBLIC_BASE_URL="http://localhost:9000/salary-uploads"
-EOF
+          printf 'DATABASE_URL=%s\nREDIS_HOST=%s\nREDIS_PORT=%s\nJWT_ACCESS_SECRET=%s\nJWT_REFRESH_SECRET=%s\nFRONTEND_URL=%s\nS3_ENDPOINT=%s\nS3_REGION=%s\nS3_ACCESS_KEY_ID=%s\nS3_SECRET_ACCESS_KEY=%s\nS3_BUCKET=%s\nS3_PUBLIC_BASE_URL=%s\n' \
+            '"postgresql://postgres:postgres@localhost:5432/salary"' \
+            '"localhost"' \
+            '"6379"' \
+            '"dev-access-secret-change-in-production"' \
+            '"dev-refresh-secret-change-in-production"' \
+            '"http://localhost:5173"' \
+            '"http://localhost:9000"' \
+            '"us-east-1"' \
+            '"minioadmin"' \
+            '"minioadmin"' \
+            '"salary-uploads"' \
+            '"http://localhost:9000/salary-uploads"' \
+            > .env
 
           echo "Generating Prisma Client..."
           npx prisma generate
