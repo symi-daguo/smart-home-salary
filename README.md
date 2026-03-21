@@ -1,6 +1,6 @@
 # 智能家居行业SaaS管理系统
 
-[![Version](https://img.shields.io/badge/version-v1.1.9-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
+[![Version](https://img.shields.io/badge/version-v1.2.0-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml/badge.svg)](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml)
 
@@ -110,6 +110,12 @@ smarthome/
 | OpenClaw | `/api/openclaw` | 窗帘 | `/api/curtain-orders` |
 
 ## 📝 版本历史
+
+### v1.2.0 (2026-03-21)
+- **B 方案（离线一体化）正式完成**：exe 现在包含完整的前后端，可离线运行
+- 修复 GitHub Actions YAML 语法错误
+- 简化 GitHub Actions 工作流
+- 统一 Node 版本要求为 >=20.0.0
 
 ### v1.1.9 (2026-03-20)
 - 修复 GitHub Actions YAML 语法错误（heredoc 中的 `postgres:` 被误认为 YAML key）
