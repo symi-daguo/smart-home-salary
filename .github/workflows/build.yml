@@ -97,25 +97,27 @@ jobs:
           rm -f prisma/schema.temp.prisma
           echo "Running desktop seed script to create initial users..."
           npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed-desktop.ts || echo "Seed script failed, continuing..."
-          cp -f "$API_DIR/prisma/desktop-seed.db" "$WORKSPACE/src-tauri/resources/binaries/seed.db" 2>/dev/null || echo "No seed db found"
+          cp -f "$API_DIR/prisma/desktop-seed.db" "$WORKSPACE/src-tauri/resources/binaries/seed.db"
 
           echo "Copying API to resources (including node_modules for B方案)..."
           mkdir -p "$WORKSPACE/src-tauri/resources/api"
-          cp -r "$API_DIR/dist" "$WORKSPACE/src-tauri/resources/api/" || true
-          cp -r "$API_DIR/src" "$WORKSPACE/src-tauri/resources/api/" || true
-          cp -r "$API_DIR/prisma" "$WORKSPACE/src-tauri/resources/api/" || true
-          cp -r "$API_DIR/node_modules" "$WORKSPACE/src-tauri/resources/api/" || true
-          cp "$API_DIR/package.json" "$WORKSPACE/src-tauri/resources/api/" || true
-          cp "$API_DIR/package-lock.json" "$WORKSPACE/src-tauri/resources/api/" || true
-          cp "$API_DIR/tsconfig.json" "$WORKSPACE/src-tauri/resources/api/" || true
-          cp "$API_DIR/nest-cli.json" "$WORKSPACE/src-tauri/resources/api/" || true
-          cp "$API_DIR/.env" "$WORKSPACE/src-tauri/resources/api/" || true
+          cp -r "$API_DIR/dist" "$WORKSPACE/src-tauri/resources/api/"
+          cp -r "$API_DIR/src" "$WORKSPACE/src-tauri/resources/api/"
+          cp -r "$API_DIR/prisma" "$WORKSPACE/src-tauri/resources/api/"
+          cp -r "$API_DIR/node_modules" "$WORKSPACE/src-tauri/resources/api/"
+          cp "$API_DIR/package.json" "$WORKSPACE/src-tauri/resources/api/"
+          cp "$API_DIR/package-lock.json" "$WORKSPACE/src-tauri/resources/api/"
+          cp "$API_DIR/tsconfig.json" "$WORKSPACE/src-tauri/resources/api/"
+          cp "$API_DIR/nest-cli.json" "$WORKSPACE/src-tauri/resources/api/"
+          cp "$API_DIR/.env" "$WORKSPACE/src-tauri/resources/api/"
 
           echo "Resources prepared successfully"
-          ls -la "$WORKSPACE/src-tauri/resources/api/" || echo "API dir empty"
-          ls -la "$WORKSPACE/src-tauri/resources/binaries/" || echo "Binaries dir empty"
+          echo "API resources:"
+          du -sh "$WORKSPACE/src-tauri/resources/api/" || echo "API dir empty"
           echo "node_modules size:"
-          du -sh "$WORKSPACE/src-tauri/resources/api/node_modules" 2>/dev/null || echo "node_modules not found"
+          du -sh "$WORKSPACE/src-tauri/resources/api/node_modules" || echo "node_modules missing!"
+          echo "binaries size:"
+          du -sh "$WORKSPACE/src-tauri/resources/binaries/" || echo "Binaries dir empty"
 
       - name: Build frontend (apps/web)
         run: npm --workspace apps/web run build
