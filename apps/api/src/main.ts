@@ -16,19 +16,42 @@ async function ensureDesktopSqliteSeed() {
   if (!filePath) return;
 
   const abs = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
-  try {
-    await fs.access(abs);
-    return;
-  } catch {
-    // continue
-  }
 
   const seedDb = String(process.env.DESKTOP_SEED_DB || '');
   if (!seedDb) return;
 
   const seedAbs = path.isAbsolute(seedDb) ? seedDb : path.resolve(process.cwd(), seedDb);
+
   await fs.mkdir(path.dirname(abs), { recursive: true });
-  await fs.copyFile(seedAbs, abs);
+
+  try {
+    await fs.access(seedAbs);
+  } catch {
+    console.error('Seed database not found at:', seedAbs);
+    return;
+  }
+
+  try {
+    const srcStats = await fs.stat(seedAbs);
+    const destStats = await fs.stat(abs).catch(() => null);
+
+    const shouldCopy = !destStats || destStats.size === 0 || srcStats.size > destStats.size;
+
+    if (shouldCopy) {
+      console.log('Copying seed database to:', abs);
+      await fs.copyFile(seedAbs, abs);
+      console.log('Seed database copied successfully');
+    } else {
+      console.log('Database already exists, skipping seed copy');
+    }
+  } catch (e) {
+    console.error('Error checking/copying seed database:', e);
+    try {
+      await fs.copyFile(seedAbs, abs);
+    } catch (copyError) {
+      console.error('Failed to copy seed database:', copyError);
+    }
+  }
 }
 
 async function bootstrap() {

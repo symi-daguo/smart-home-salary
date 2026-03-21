@@ -1,6 +1,6 @@
 # Tauri 桌面应用打包指南
 
-> **当前版本：v1.2.2** | **最后更新：2026-03-21**
+> **当前版本：v1.2.3** | **最后更新：2026-03-21**
 
 本文档详细说明如何打包智能家居 SaaS 管理系统的桌面应用，支持 Windows、macOS 和 Linux。
 
@@ -246,12 +246,12 @@ jobs:
 ```bash
 # 提交所有更改
 git add .
-git commit -m "release: v1.2.2"
+git commit -m "release: v1.2.3"
 
 # 打 tag（会自动触发 GitHub Actions）
-git tag v1.2.2
+git tag v1.2.3
 git push origin main
-git push origin v1.2.2
+git push origin v1.2.3
 ```
 
 ### 4. 验证构建结果
@@ -478,6 +478,7 @@ npm run tauri:build
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| 1.2.3 | 2026-03-21 | 修复 B 方案登录问题（数据库种子复制逻辑、API 健康检查、详细日志） |
 | 1.2.2 | 2026-03-21 | 修复 B 方案登录无效问题（node_modules 排除、seed.db 未初始化用户、API 进程提前退出） |
 | 1.2.1 | 2026-03-21 | 修复前端 devDependencies 被移除问题，B 方案打包完整 |
 | 1.2.0 | 2026-03-21 | B 方案（离线一体化）正式完成，exe 包含完整前后端 node_modules |

@@ -1,6 +1,6 @@
 # 智能家居行业SaaS管理系统
 
-[![Version](https://img.shields.io/badge/version-v1.2.2-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
+[![Version](https://img.shields.io/badge/version-v1.2.3-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml/badge.svg)](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml)
 
@@ -110,6 +110,13 @@ smarthome/
 | OpenClaw | `/api/openclaw` | 窗帘 | `/api/curtain-orders` |
 
 ## 📝 版本历史
+
+### v1.2.3 (2026-03-21)
+- **B 方案（离线一体化）登录问题深度修复**：
+  - 修复 `ensureDesktopSqliteSeed` 函数：当目标数据库文件已存在或大小时不会复制种子数据的问题
+  - 添加详细的启动日志（Node/npm 版本、API 路径、数据库路径等）
+  - 添加 API 健康检查机制，等待 API 完全启动后再继续
+  - 改进错误处理和日志输出
 
 ### v1.2.2 (2026-03-21)
 - **B 方案（离线一体化）登录修复**：
