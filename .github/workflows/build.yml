@@ -101,23 +101,41 @@ jobs:
 
           echo "Copying API to resources (including node_modules for B方案)..."
           mkdir -p "$WORKSPACE/src-tauri/resources/api"
-          cp -r "$API_DIR/dist" "$WORKSPACE/src-tauri/resources/api/"
-          cp -r "$API_DIR/src" "$WORKSPACE/src-tauri/resources/api/"
-          cp -r "$API_DIR/prisma" "$WORKSPACE/src-tauri/resources/api/"
-          cp -r "$API_DIR/node_modules" "$WORKSPACE/src-tauri/resources/api/"
-          cp "$API_DIR/package.json" "$WORKSPACE/src-tauri/resources/api/"
-          cp "$API_DIR/package-lock.json" "$WORKSPACE/src-tauri/resources/api/"
-          cp "$API_DIR/tsconfig.json" "$WORKSPACE/src-tauri/resources/api/"
-          cp "$API_DIR/nest-cli.json" "$WORKSPACE/src-tauri/resources/api/"
-          cp "$API_DIR/.env" "$WORKSPACE/src-tauri/resources/api/"
+          mkdir -p "$WORKSPACE/src-tauri/resources/binaries"
+
+          echo "Checking workspace structure..."
+          echo "Root node_modules:"
+          du -sh "$WORKSPACE/node_modules" 2>/dev/null || echo "Root node_modules not found"
+          echo "API node_modules:"
+          du -sh "$API_DIR/node_modules" 2>/dev/null || echo "API node_modules not found"
+
+          echo "Copying dist..."
+          cp -r "$API_DIR/dist" "$WORKSPACE/src-tauri/resources/api/" && echo "dist copied" || echo "dist copy failed"
+          echo "Copying src..."
+          cp -r "$API_DIR/src" "$WORKSPACE/src-tauri/resources/api/" && echo "src copied" || echo "src copy failed"
+          echo "Copying prisma..."
+          cp -r "$API_DIR/prisma" "$WORKSPACE/src-tauri/resources/api/" && echo "prisma copied" || echo "prisma copy failed"
+
+          echo "Copying node_modules (trying API dir first, then root)..."
+          if [ -d "$API_DIR/node_modules" ]; then
+            cp -r "$API_DIR/node_modules" "$WORKSPACE/src-tauri/resources/api/" && echo "node_modules copied from API dir" || echo "node_modules copy from API dir failed"
+          elif [ -d "$WORKSPACE/node_modules" ]; then
+            cp -r "$WORKSPACE/node_modules" "$WORKSPACE/src-tauri/resources/api/" && echo "node_modules copied from root" || echo "node_modules copy from root failed"
+          else
+            echo "WARNING: No node_modules found anywhere!"
+          fi
+
+          echo "Copying config files..."
+          cp "$API_DIR/package.json" "$WORKSPACE/src-tauri/resources/api/" && echo "package.json copied"
+          cp "$API_DIR/package-lock.json" "$WORKSPACE/src-tauri/resources/api/" && echo "package-lock.json copied"
+          cp "$API_DIR/tsconfig.json" "$WORKSPACE/src-tauri/resources/api/" && echo "tsconfig.json copied"
+          cp "$API_DIR/nest-cli.json" "$WORKSPACE/src-tauri/resources/api/" && echo "nest-cli.json copied"
+          cp "$API_DIR/.env" "$WORKSPACE/src-tauri/resources/api/" && echo ".env copied"
 
           echo "Resources prepared successfully"
-          echo "API resources:"
+          echo "Verifying copied resources:"
           du -sh "$WORKSPACE/src-tauri/resources/api/" || echo "API dir empty"
-          echo "node_modules size:"
-          du -sh "$WORKSPACE/src-tauri/resources/api/node_modules" || echo "node_modules missing!"
-          echo "binaries size:"
-          du -sh "$WORKSPACE/src-tauri/resources/binaries/" || echo "Binaries dir empty"
+          du -sh "$WORKSPACE/src-tauri/resources/api/node_modules" && echo "node_modules verified" || echo "node_modules MISSING!"
 
       - name: Build frontend (apps/web)
         run: npm --workspace apps/web run build
