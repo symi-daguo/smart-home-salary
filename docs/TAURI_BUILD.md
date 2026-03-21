@@ -1,6 +1,6 @@
 # Tauri 桌面应用打包指南
 
-> **当前版本：v1.2.0** | **最后更新：2026-03-21**
+> **当前版本：v1.2.1** | **最后更新：2026-03-21**
 
 本文档详细说明如何打包智能家居 SaaS 管理系统的桌面应用，支持 Windows、macOS 和 Linux。
 
@@ -23,15 +23,15 @@ npm run tauri:build
 ```
 bundle/
 ├── nsis/          # Windows NSIS 安装包
-│   └── SmartHome_1.2.0_x64-setup.exe
+│   └── SmartHome_1.2.1_x64-setup.exe
 ├── macos/         # macOS App
 │   └── SmartHome.app
 ├── dmg/           # macOS DMG 安装包
-│   └── SmartHome_1.1.8_aarch64.dmg
+│   └── SmartHome_1.2.1_aarch64.dmg
 ├── deb/           # Linux DEB 包
-│   └── SmartHome_1.1.8_amd64.deb
+│   └── SmartHome_1.2.1_amd64.deb
 └── appimage/      # Linux AppImage
-    └── SmartHome_1.1.8_amd64.AppImage
+    └── SmartHome_1.2.1_amd64.AppImage
 ```
 
 ### 为什么不同平台/格式体积差异很大？
@@ -249,9 +249,9 @@ git add .
 git commit -m "release: v1.1.6"
 
 # 打 tag（会自动触发 GitHub Actions）
-git tag v1.1.6
+git tag v1.2.1
 git push origin main
-git push origin v1.1.6
+git push origin v1.2.1
 ```
 
 ### 4. 验证构建结果
@@ -478,6 +478,7 @@ npm run tauri:build
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| 1.2.1 | 2026-03-21 | 修复前端 devDependencies 被移除问题，B 方案打包完整 |
 | 1.2.0 | 2026-03-21 | B 方案（离线一体化）正式完成，exe 包含完整前后端 node_modules |
 | 1.1.9 | 2026-03-20 | 修复 GitHub Actions YAML 语法错误，简化 B 方案资源准备流程 |
 | 1.1.8 | 2026-03-18 | 修复代码格式，统一 Node 版本为 >=20.0.0 |
