@@ -3,7 +3,13 @@
 fn main() {
     if let Err(err) = smarthome_lib::run() {
         #[cfg(windows)]
-        show_startup_error(&err.to_string());
+        {
+            show_startup_error(&err.to_string());
+        }
+        #[cfg(not(windows))]
+        {
+            eprintln!("Application error: {}", err);
+        }
         std::process::exit(1);
     }
 }
