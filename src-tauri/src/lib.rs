@@ -2,7 +2,7 @@ use tauri::Manager;
 use std::process::{Command, Stdio};
 use std::time::Duration;
 use std::thread;
-use std::io::{Read, BufRead, BufReader};
+use std::io::{BufRead, BufReader};
 
 fn check_api_health() -> bool {
     let mut attempts = 0;
@@ -88,7 +88,7 @@ fn start_api(app_handle: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Er
     }
 
     if let Ok(output) = &node_check {
-        log::info!("Node version: {}", String::from_utf8_lossy(output.stdout).trim());
+        log::info!("Node version: {}", String::from_utf8_lossy(&output.stdout).trim());
     }
 
     let npm_check = Command::new("npm").arg("--version").output();
@@ -99,7 +99,7 @@ fn start_api(app_handle: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Er
     }
 
     if let Ok(output) = &npm_check {
-        log::info!("npm version: {}", String::from_utf8_lossy(output.stdout).trim());
+        log::info!("npm version: {}", String::from_utf8_lossy(&output.stdout).trim());
     }
 
     let api_installed = api_dir.join("node_modules").exists();
@@ -206,7 +206,7 @@ fn start_api(app_handle: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Er
         Ok(child) => {
             log::info!("API server spawned with PID: {:?}", child.id());
 
-            if let Ok(output) = child.stdout {
+            if let Some(output) = child.stdout {
                 let reader = BufReader::new(output);
                 for line in reader.lines().take(10) {
                     if let Ok(line) = line {
