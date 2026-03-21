@@ -97,10 +97,6 @@ jobs:
           rm -f prisma/schema.temp.prisma
           cp -f "$API_DIR/prisma/desktop-seed.db" "$WORKSPACE/src-tauri/resources/binaries/seed.db" 2>/dev/null || echo "No seed db found"
 
-          echo "Installing API dependencies for B方案 (offline mode)..."
-          cd "$API_DIR"
-          npm install --omit=dev
-
           echo "Copying API to resources (including node_modules for B方案)..."
           mkdir -p "$WORKSPACE/src-tauri/resources/api"
           cp -r "$API_DIR/dist" "$WORKSPACE/src-tauri/resources/api/" || true
