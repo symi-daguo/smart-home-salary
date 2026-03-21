@@ -1,6 +1,6 @@
 # 智能家居行业SaaS管理系统
 
-[![Version](https://img.shields.io/badge/version-v1.2.1-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
+[![Version](https://img.shields.io/badge/version-v1.2.2-blue.svg)](https://github.com/symi-daguo/smart-home-salary/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml/badge.svg)](https://github.com/symi-daguo/smart-home-salary/actions/workflows/build.yml)
 
@@ -110,6 +110,14 @@ smarthome/
 | OpenClaw | `/api/openclaw` | 窗帘 | `/api/curtain-orders` |
 
 ## 📝 版本历史
+
+### v1.2.2 (2026-03-21)
+- **B 方案（离线一体化）登录修复**：
+  - 修复 `lib.rs` 中 `copy_dir_all` 函数排除 `node_modules` 目录的问题
+  - 添加 `DESKTOP_SEED_DB` 环境变量，正确初始化 SQLite 种子数据库
+  - 移除导致 API 进程提前退出的 `drop(child)` 调用
+  - CI 构建流程现在会运行 `seed-desktop.ts` 创建初始用户账号
+- **默认账号**：founder@yoursaas.com / admin@demo.local（密码均为 `password`）
 
 ### v1.2.0 (2026-03-21)
 - **B 方案（离线一体化）正式完成**：exe 现在包含完整的前后端，可离线运行

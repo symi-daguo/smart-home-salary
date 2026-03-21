@@ -1,6 +1,6 @@
 {
   "name": "symi-api",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "SYMI - 智能家居行业SAAS管理系统后端API，基于NestJS + Prisma构建",
   "author": "SYMI Team <303316404@qq.com>",
   "license": "MIT",

@@ -91,13 +91,27 @@ fn start_api(app_handle: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Er
     }
     
     let api_entry = api_dir.join("dist").join("main.js");
-    
+
     if !api_entry.exists() {
         log::warn!("API entry point not found at {:?}", api_entry);
         log::warn!("Running in A mode only");
         return Ok(());
     }
-    
+
+    let seed_source = app_handle
+        .path()
+        .resolve("resources/binaries/seed.db", tauri::path::BaseDirectory::Resource);
+
+    let seed_path = if let Ok(p) = &seed_source {
+        if p.exists() {
+            Some(p.clone())
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     let mut cmd = Command::new("node");
     cmd.arg(&api_entry)
         .env("PORT", "3000")
@@ -106,24 +120,25 @@ fn start_api(app_handle: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Er
         .env("UPLOADS_DIR", uploads_dir.display().to_string())
         .env("NODE_ENV", "production")
         .env("SWAGGER_ENABLED", "false")
-        .env("CORS_ORIGIN", "tauri://localhost")
-        .current_dir(&api_dir)
+        .env("CORS_ORIGIN", "tauri://localhost");
+
+    if let Some(seed) = seed_path {
+        cmd.env("DESKTOP_SEED_DB", seed.display().to_string());
+    }
+
+    cmd.current_dir(&api_dir)
         .stdout(Stdio::null())
         .stderr(Stdio::piped());
-    
+
     match cmd.spawn() {
-        Ok(child) => {
-            log::info!("API server started on port 3000 with PID: {:?}", child.id());
-            
-            std::thread::sleep(std::time::Duration::from_secs(3));
-            
-            drop(child);
+        Ok(_child) => {
+            log::info!("API server started on port 3000");
         }
         Err(e) => {
             log::error!("Failed to start API server: {}", e);
         }
     }
-    
+
     Ok(())
 }
 
@@ -135,9 +150,7 @@ fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result
         let ty = entry.file_type()?;
 
         if ty.is_dir() {
-            if entry.file_name() != "node_modules" {
-                copy_dir_all(&entry.path(), &dst.join(entry.file_name()))?;
-            }
+            copy_dir_all(&entry.path(), &dst.join(entry.file_name()))?;
         } else {
             std::fs::copy(entry.path(), dst.join(entry.file_name()))?;
         }

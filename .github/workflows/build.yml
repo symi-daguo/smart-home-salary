@@ -95,6 +95,8 @@ jobs:
           export DATABASE_URL="file:./prisma/desktop-seed.db"
           npx prisma db push --schema prisma/schema.temp.prisma --skip-generate
           rm -f prisma/schema.temp.prisma
+          echo "Running desktop seed script to create initial users..."
+          npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed-desktop.ts || echo "Seed script failed, continuing..."
           cp -f "$API_DIR/prisma/desktop-seed.db" "$WORKSPACE/src-tauri/resources/binaries/seed.db" 2>/dev/null || echo "No seed db found"
 
           echo "Copying API to resources (including node_modules for B方案)..."
