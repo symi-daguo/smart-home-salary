@@ -97,7 +97,12 @@ jobs:
           rm -f prisma/schema.temp.prisma
           echo "Running desktop seed script to create initial users..."
           npx ts-node --compiler-options '{"module":"CommonJS"}' prisma/seed-desktop.ts || echo "Seed script failed, continuing..."
-          cp -f "$API_DIR/prisma/desktop-seed.db" "$WORKSPACE/src-tauri/resources/binaries/seed.db"
+          if [ -f "$API_DIR/prisma/desktop-seed.db" ]; then
+            cp -f "$API_DIR/prisma/desktop-seed.db" "$WORKSPACE/src-tauri/resources/binaries/seed.db"
+            echo "Seed database copied successfully"
+          else
+            echo "WARNING: Seed database not found at $API_DIR/prisma/desktop-seed.db"
+          fi
 
           echo "Copying API to resources (including node_modules for B方案)..."
           mkdir -p "$WORKSPACE/src-tauri/resources/api"
